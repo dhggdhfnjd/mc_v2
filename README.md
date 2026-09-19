@@ -50,12 +50,11 @@ handset layout. `?bare=1` forces full screen and `?size=qq` forces QQVGA.
    they have dealt with before.
 6. The buyer map opens on **50 km around your location** and only buyers inside that circle get
    bubbles; `* +N > 50 km` counts the rest and `*` toggles the whole corridor.
-7. Your location can be set three ways, all from the buyer map's `0` "From where?":
-   **My location** (`navigator.geolocation`, shown as a 100 km map; OK uses the selected market),
-   **Choose city** from the market list, or **Coordinates** typed as latitude/longitude (`*` is the
-   decimal point, `#` the minus sign). Settings → Coordinates opens the same editor. Prices,
-   transport and net are counted from the market nearest your location; the map centres on the
-   exact point.
+7. The buyer map opens on every WFP market in Kenya. `*` zooms to 50 km around the selected
+   market and `0` reads the phone's GPS (`navigator.geolocation`) and zooms to 50 km around it;
+   pressing the same key again returns to the whole map. Settings → Coordinates types a location
+   as latitude/longitude (`*` is the decimal point, `#` the minus sign). Prices, transport and net
+   are counted from the market nearest your location.
 
 ### Map basemap and location
 

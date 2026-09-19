@@ -4,9 +4,11 @@
 // Bubble size and number both represent distinct buyers. D-pad moves between markets; OK moves
 // into the buyer rows below, where another OK opens the selected buyer's details.
 //
-// Two views. By default the map is framed on 50 km around your location (GPS, typed
-// coordinates, or the market you picked) and only buyers inside that circle get bubbles; a row
-// counts the ones farther away. * toggles the whole Kenya market view. 0 asks "From where?".
+// One overview and two zooms. The map opens on every WFP market in Kenya. * zooms in on the
+// selected market (50 km around it) to see the buyers there; * again goes back to the overview.
+// 0 reads the phone's GPS and zooms to 50 km around it; 0 again goes back. RSK also leaves a zoom
+// before it leaves the screen. Without a fix the view stays where it is and the hint row says so:
+// a guess never passes for a location.
 //
 // Not a slippy map: Cloud Phone streams draw commands, and panning raster tiles would be slow
 // and costly on data. With NEXT_PUBLIC_GOOGLE_MAPS_KEY set at build time each view is one Google
@@ -18,29 +20,23 @@ import Screen, { type ScreenProps } from "../components/Screen";
 import { Row } from "../components/ui";
 import type { Key } from "../core/keypad";
 import { useNav } from "../core/router";
-import { useSettings, type Settings } from "../core/settings";
+import { demoFix, gpsFix } from "../core/location";
+import { useSettings } from "../core/settings";
 import { useApi } from "../core/useApi";
 import { getDemands, type DemandView } from "../lib/api";
 import { DEFAULT_MARKET_ID, MARKETS, commodity, market } from "../lib/catalog";
+import { nearestMarket } from "../lib/coords";
 import { fmt } from "../lib/money";
 import { circleBox, distanceKm, fitView, kmPerPx, project, spread, staticMapUrl, type LatLon, type MapView } from "../lib/staticmap";
 
 const W = 240;
 const H = 154;
-const RADIUS_KM = 50;
+const ZOOM_KM = 50;
 
 const MAP_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
 // the extra bottom padding keeps bubbles off the Google logo, which must stay visible
 const PAD = { top: 18, right: 16, bottom: 26, left: 16 };
 const CORRIDOR = fitView(MARKETS, W / H, PAD, 400);
-
-/** one line saying where distances are counted from, for the map and "From where?" */
-export function originLabel(settings: Settings): string {
-  const name = market(settings.marketId ?? DEFAULT_MARKET_ID).name;
-  if (settings.fix?.source === "manual") return `📌 ${settings.fix.lat.toFixed(2)}, ${settings.fix.lon.toFixed(2)}`;
-  if (settings.fix) return `📍 ${name}`;
-  return `🏙️ ${name}`;
-}
 
 interface Bubble {
   marketId: string;
@@ -74,7 +70,7 @@ function neighbour(from: Bubble, all: Bubble[], key: "Up" | "Down" | "Left" | "R
 
 export default function DemandMap({ active, params }: ScreenProps) {
   const nav = useNav();
-  const { settings, t } = useSettings();
+  const { settings, update, t } = useSettings();
   const c = commodity((params.commodityId as string | undefined) ?? settings.foodId);
   const marketId = settings.marketId ?? DEFAULT_MARKET_ID;
   const me = market(marketId);
@@ -82,16 +78,24 @@ export default function DemandMap({ active, params }: ScreenProps) {
   const [selId, setSelId] = useState<string | null>(null);
   const [listMode, setListMode] = useState(false);
   const [buyerIdx, setBuyerIdx] = useState(0);
-  const [showAll, setShowAll] = useState(false);
+  /** null is the overview; * zooms on a market, 0 on the phone's own location */
+  const [zoom, setZoom] = useState<{ market: string } | "me" | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [noGps, setNoGps] = useState(false);
   const [failed, setFailed] = useState(false);
   const [forceSvg] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("map") === "svg");
 
   const origin: LatLon = settings.fix ?? me;
-  // rounded to ~1 km so GPS jitter and retyped coordinates reuse the cached image
+  // rounded to ~1 km so GPS jitter reuses the cached image
   const oLat = Math.round(origin.lat * 100) / 100;
   const oLon = Math.round(origin.lon * 100) / 100;
-  const nearView = useMemo<MapView>(() => fitView(circleBox({ lat: oLat, lon: oLon }, RADIUS_KM), W / H, PAD, 480), [oLat, oLon]);
-  const view = showAll ? CORRIDOR : nearView;
+  const zoomMarket = zoom && zoom !== "me" ? zoom.market : null;
+  const centre: LatLon | null = zoom === "me" ? { lat: oLat, lon: oLon } : zoomMarket ? market(zoomMarket) : null;
+  const view = useMemo<MapView>(
+    () => (centre ? fitView(circleBox(centre, ZOOM_KM), W / H, PAD, 480) : CORRIDOR),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [zoom === "me", zoomMarket, oLat, oLon],
+  );
   const scale = W / view.width;
   const imageOk = !!MAP_KEY && !failed && !forceSvg;
   // Even without a basemap, project the exact WFP coordinates rather than using a schematic.
@@ -101,16 +105,12 @@ export default function DemandMap({ active, params }: ScreenProps) {
   };
   const pos = (id: string) => toScreen(market(id));
   const you = toScreen(origin);
-  const inRange = (id: string) => showAll || distanceKm(origin, market(id)) <= RADIUS_KM;
+  const inRange = (id: string) => !centre || distanceKm(centre, market(id)) <= ZOOM_KM;
 
-  const { bubbles, hidden } = useMemo(() => {
+  const bubbles = useMemo(() => {
     const byMarket = new Map<string, Map<string, DemandView>>();
-    const far = new Set<string>();
     for (const x of data ?? []) {
-      if (!inRange(x.marketId)) {
-        far.add(x.marketId);
-        continue;
-      }
+      if (!inRange(x.marketId)) continue;
       const buyers = byMarket.get(x.marketId) ?? new Map<string, DemandView>();
       const existing = buyers.get(x.username);
       if (!existing || x.createdAt > existing.createdAt) buyers.set(x.username, x);
@@ -122,9 +122,9 @@ export default function DemandMap({ active, params }: ScreenProps) {
       const count = buyers.length;
       return { marketId: id, x: p.x, y: p.y, ax: p.x, ay: p.y, r: Math.min(19, 7 + Math.sqrt(count) * 4), buyers, count };
     });
-    return { bubbles: spread(all, W, H), hidden: far.size };
+    return spread(all, W, H);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, view, oLat, oLon, showAll]);
+  }, [data, view]);
 
   const sel = bubbles.find((b) => b.marketId === selId) ?? bubbles[0] ?? null;
   const selectedBuyer = sel?.buyers[Math.min(buyerIdx, sel.buyers.length - 1)] ?? null;
@@ -136,8 +136,28 @@ export default function DemandMap({ active, params }: ScreenProps) {
     setListMode(false);
   };
 
+  /** back to the overview, keeping the market that was selected */
+  const overview = () => {
+    setZoom(null);
+    setBuyerIdx(0);
+  };
+
+  const locate = async () => {
+    setLocating(true);
+    const found = demoFix() ?? (await gpsFix());
+    setLocating(false);
+    setNoGps(!found);
+    if (!found) return;
+    // the fix is also where transport costs are counted from, as the old "My location" set it
+    update({ marketId: nearestMarket(found).market.id, fix: { lat: found.lat, lon: found.lon, accuracyM: found.accuracyM, source: "gps" } });
+    setSelId(null);
+    setBuyerIdx(0);
+    setZoom("me");
+  };
+
   const onKey = (key: Key): boolean => {
     if (key === "LSK") return nav.home(), true;
+    if (locating) return true;
     if (listMode) {
       if (key === "RSK") return setListMode(false), true;
       if (!sel?.buyers.length) return true;
@@ -149,9 +169,11 @@ export default function DemandMap({ active, params }: ScreenProps) {
       }
       return true;
     }
-    if (key === "0") return nav.push("where"), true;
-    if (key === "*") return setShowAll((v) => !v), setSelId(null), setBuyerIdx(0), true;
+    if (key === "0") return zoom === "me" ? overview() : void locate(), true;
+    if (key === "RSK" && zoom) return overview(), true;
+    if (key === "*" && zoomMarket) return overview(), true;
     if (!sel) return false;
+    if (key === "*") return setZoom({ market: sel.marketId }), setSelId(sel.marketId), setBuyerIdx(0), true;
     if (key === "Up" || key === "Down" || key === "Left" || key === "Right") {
       const next = neighbour(sel, bubbles, key);
       chooseBubble(next);
@@ -162,7 +184,9 @@ export default function DemandMap({ active, params }: ScreenProps) {
   };
 
   const onMap = (p: { x: number; y: number }) => p.x >= 0 && p.x <= W && p.y >= 0 && p.y <= H;
-  const circlePx = (RADIUS_KM / kmPerPx(oLat, view.zoom)) * scale;
+  const ring = centre ? { at: toScreen(centre), px: (ZOOM_KM / kmPerPx(centre.lat, view.zoom)) * scale } : null;
+  const gpsHint = locating ? `📍 ${t("locating")}` : zoom === "me" ? `0 ${t("wholeMap")}` : `0 📍 ${t(noGps ? "gpsFailed" : "myLocation")}`;
+  const zoomHint = zoomMarket ? `* ${t("wholeMap")}` : sel ? `* 🔍 ${t("zoomIn")}` : "";
   return (
     <Screen
       active={active}
@@ -176,13 +200,15 @@ export default function DemandMap({ active, params }: ScreenProps) {
         {imageOk ? (
           <image href={staticMapUrl(view, MAP_KEY)} x="0" y="0" width={W} height={view.height * scale} preserveAspectRatio="none" onError={() => setFailed(true)} />
         ) : null}
-        {showAll ? (
-          <text x={W - 5} y="11" fill="#8FAE98" fontSize="9" textAnchor="end">KENYA · WFP MARKETS</text>
-        ) : (
+        {ring ? (
           <>
-            <circle cx={you.x} cy={you.y} r={circlePx} fill="#FFD23F" fillOpacity="0.05" stroke="#FFD23F" strokeWidth="1.5" strokeDasharray="4 4" />
-            <text x={you.x} y={you.y - circlePx + 11} fill="#FFD23F" fontSize="9" textAnchor="middle" stroke="#0B130F" strokeWidth="3" paintOrder="stroke">{RADIUS_KM} km</text>
+            <circle cx={ring.at.x} cy={ring.at.y} r={ring.px} fill="#FFD23F" fillOpacity="0.05" stroke="#FFD23F" strokeWidth="1.5" strokeDasharray="4 4" />
+            <text x="5" y="11" fill="#FFD23F" fontSize="9" fontWeight="700" stroke="#0B130F" strokeWidth="3" paintOrder="stroke">
+              🔍 {ZOOM_KM} km · {zoom === "me" ? t("myLocation") : market(zoomMarket!).name}
+            </text>
           </>
+        ) : (
+          <text x={W - 5} y="11" fill="#8FAE98" fontSize="9" textAnchor="end">KENYA · WFP MARKETS</text>
         )}
         {MARKETS.filter((m) => !bubbles.some((b) => b.marketId === m.id) && m.id !== me.id)
           .map((m) => ({ id: m.id, p: pos(m.id) }))
@@ -234,14 +260,10 @@ export default function DemandMap({ active, params }: ScreenProps) {
             ))}
           </>
         ) : (
-          <div className="mut">{!data ? "Loading…" : showAll ? t("noDemand") : `${t("noBuyersNear")} ${RADIUS_KM} km`}</div>
+          <div className="mut">{!data ? "Loading…" : centre ? `${t("noBuyersNear")} ${ZOOM_KM} km` : t("noDemand")}</div>
         )}
-        {/* key hints lead, like the numbered menus: 0 changes the location, * the view */}
-        <Row
-          mut
-          l={`0 ${originLabel(settings)}`}
-          r={showAll ? `* ${RADIUS_KM} km` : `* ${t("wholeMap")}${hidden ? ` +${hidden}` : ""}`}
-        />
+        {/* key hints lead, like the numbered menus: 0 is your location, * the selected market */}
+        <Row mut l={gpsHint} r={zoomHint} />
       </div>
     </Screen>
   );

@@ -16,13 +16,12 @@ HOME — products + photo in one paged 3×3 grid (D-pad + OK only)
   ├─ Photo ── recognise ── confirm with Up/Down + OK ──┐
   └─ Product ───────────────────────────────────────────┤
                                                        ▼
-PRODUCT HUB — 1 Now price · 2 Buyer map · 3 History · 4 I want to buy
+PRODUCT HUB — 1 Now price · 2 I want to sell (buyer map) · 3 History · 4 I want to buy
   ├─ Now price: dated official price + sufficiently trusted crowd price
-  ├─ Buyer map: 50 km around you (* = whole corridor); market-level locations only
-  │    ├─ Buyer detail: phone number; call outside Mizani
-  │    └─ 0 From where? ─┬─ 1 My location: GPS, 100 km map, OK uses the chosen market
-  │                      ├─ 2 Choose city: the market list
-  │                      └─ 3 Coordinates: type latitude / longitude
+  ├─ Buyer map: every WFP market in Kenya; market-level locations only
+  │    ├─ * zooms to 50 km around the selected market; * again = whole map
+  │    ├─ 0 reads GPS and zooms to 50 km around you; 0 again = whole map
+  │    └─ Buyer detail: phone number; call outside Mizani
   ├─ History: 30 / 90 / 365-day trend
   └─ I want to buy: edit market + quantity + price/kg + phone together → review
        └─ one active post per product; edit or close; expires after 3 days
@@ -33,7 +32,7 @@ Settings is reached by the home left soft key and contains language, coordinates
 
 Location is `settings.marketId` plus an optional `settings.fix` (`source: "gps" | "manual"`).
 Prices, transport and net always use `marketId`; with a fix it is the market nearest the point.
-The buyer map centres on the fix when there is one, otherwise on the market.
+The buyer map opens on the whole country; 0 sets the fix from GPS and centres on it.
 
 ## Interaction rules
 
