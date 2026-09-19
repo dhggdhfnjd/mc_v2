@@ -44,6 +44,8 @@ npm run typecheck && npm run lint
 
 完整設計（會議整理、Busia 場景、畫面草圖、系統架構、資料模型、API）在 `docs/mizani-architecture.html`。
 
+**App 怎麼操作**（每個畫面的截圖、按鍵、兩分鐘示範腳本、常見問題）在 [`docs/USER_MANUAL.md`](USER_MANUAL.md)。截圖是用無頭 Chrome 自動操作 App 逐頁截的，放在 `docs/manual/`。
+
 ## 三、已經驗證的
 
 - 主流程實測：選品項 → 選地區 → 官方價＋回報價 → 輸入數量 → 對方開價的紅黃綠燈、整批差額、建議還價、需求看板上更好的買家 → 成交存帳本，回報人數 7→8、中位數跟著動。

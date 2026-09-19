@@ -6,6 +6,8 @@ It answers the four questions a trader has at the stall: **what is the price, wh
 
 > Prototype. All prices, exchange rates and seasonal curves are deterministic demo data standing in for KAMIS (Kenya), WFP/HDX and other traders' phones.
 
+**使用說明書（繁體中文，附每個畫面的截圖）：[docs/USER_MANUAL.md](docs/USER_MANUAL.md)**　·　交接說明：[docs/HANDOVER.md](docs/HANDOVER.md)
+
 ## Try it
 
 ```bash
