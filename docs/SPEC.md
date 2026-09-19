@@ -154,7 +154,7 @@
 | 10 | 沒有推播、沒有背景執行、沒有 Service Worker/離線 | V | 非同步收件匣＋未讀數＋開啟/手動更新；敲門簡訊（平台外）只在正式版，MVP 用「電信層」面板模擬。**不做離線模式** |
 | 11 | `prefers-color-scheme` 永遠 `light`，`prefers-reduced-motion` 永遠 `no-preference` | V | 高對比自己做開關（設定畫面，預設深色高對比） |
 | 12 | localStorage 5 MB、使用者「Clear Data」會清空；離開 App 快取很快清除 | V | 只存偏好/私人底價/校準/待送件匣；每次讀寫 `try/catch`；沒有也能跑 |
-| 13 | fetch/CORS 與 Chrome 相同；請求由資料中心（新加坡/美/南非/西班牙）發出，IP 在 `X-Forwarded-For` | V | Serverless 需正確 CORS；市場由使用者選，不由 IP 推斷；不用 Geolocation（不支援） |
+| 13 | fetch/CORS 與 Chrome 相同；請求由資料中心（新加坡/美/南非/西班牙）發出，IP 在 `X-Forwarded-For` | V | Serverless 需正確 CORS；市場由使用者選，不由 IP 推斷；Geolocation 在 R60+ 實機可用（2026-09-19 確認），Near me 畫面使用，失敗時退回使用者選的市場 |
 | 14 | `navigator.hasFeature('TelScheme'\|'SmsScheme'\|'Vibrate')` 回 Promise，名稱區分大小寫；`tel:` 需 client ≥3.1.2 這個版本號**未重新查證** | V(偵測)/U(版本) | 聯絡揭露一律先偵測，false 時「大字顯示號碼 10 分鐘供抄寫」；`try/catch` |
 | 15 | 外部連結、`target=_blank`、`window.open`、下載、相機在真機的行為 | U | MVP 不用任何外連/下載/相機 |
 | 16 | 奈及利亞是否販售、itel NEO R60+ 是否在官方裝置清單 | U | 簡報寫「奈及利亞為**潛在**市場」；已證實市場：印度、越南、非洲（南非 Vodacom、馬達加斯加）——所以**第二個地區包選印度 Bihar** |

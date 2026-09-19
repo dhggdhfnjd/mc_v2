@@ -1,8 +1,8 @@
 "use client";
 
-// L3 — language and country selection. Country means the market you trade from: Cloud Phone has
-// no GPS and the browser runs in a data centre, so it is a manual choice, asked once and then
-// shown in every header. Both lists live here because the plan draws them as one L3 leaf.
+// L3 — language and country selection. Country means the market you trade from: a manual
+// choice, asked once and then shown in every header (Near me can also set it from the phone's
+// location). Both lists live here because the plan draws them as one L3 leaf.
 
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Row, useListNav } from "../components/ui";

@@ -1,9 +1,9 @@
 "use client";
 
-// Where is the phone? Cloud Phone has no GPS: the page runs in CloudMosa's data centre, so
-// navigator.geolocation either fails or, at best, reports the server. We still try it (it works
-// on a laptop or smartphone browser), accept ?at=lat,lon for demos, and otherwise fall back to
-// the market the user picked. The source is always shown, so a guess never passes for a fix.
+// Where is the phone? navigator.geolocation works on Cloud Phone (confirmed on the itel R60+,
+// 19 Sep 2026) as well as in ordinary browsers. ?at=lat,lon overrides it for demos, and when it
+// is denied or times out we fall back to the market the user picked. The source is always
+// shown, so a guess never passes for a fix.
 
 import type { LatLon } from "../lib/staticmap";
 
