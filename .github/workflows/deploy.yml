@@ -1,0 +1,68 @@
+name: Test and deploy to GitHub Pages
+
+# Same deployment route as the official Meichu Hackathon demo (static export → gh-pages branch),
+# with the test suite in front of it. Pages must be set to "Deploy from a branch" → gh-pages.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Typecheck
+      run: npm run typecheck
+
+    - name: Lint
+      run: npm run lint
+
+    - name: Unit tests (money + trust engines)
+      run: npm test
+
+  build-and-deploy:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build
+      run: npm run build
+      env:
+        NODE_ENV: production
+        # GitHub Pages serves the site under /<repo-name>
+        NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./out
