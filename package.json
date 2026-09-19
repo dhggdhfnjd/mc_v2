@@ -9,7 +9,7 @@
     "start": "npx serve out",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run app"
   },
   "dependencies": {
     "next": "^15.5.2",
