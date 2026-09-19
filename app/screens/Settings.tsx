@@ -1,86 +1,56 @@
 "use client";
 
-// L2 — the setting menu, drawn like every other menu: icon plus word on the number keys.
-// Language and country both open the L3 selection screen; the two demo switches act in place.
+// Only real user preferences live here. Network simulation and data-reset controls belong in
+// developer tooling, not in a low-literacy production menu.
 
 import Screen, { type ScreenProps } from "../components/Screen";
-import { Grid, useGridNav, useNotice, type GridItem } from "../components/ui";
+import { Grid, useGridNav, type GridItem } from "../components/ui";
 import type { TKey } from "../core/i18n";
 import { isDigit, type Key } from "../core/keypad";
 import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
-import { resetDemoData, type NetworkMode } from "../lib/api";
 import { market } from "../lib/catalog";
 
-const NETWORKS: NetworkMode[] = ["ok", "flaky", "down"];
-
-const ENTRIES: { icon: string; label: TKey }[] = [
-  { icon: "🌐", label: "lang" },
-  { icon: "📍", label: "country" },
-  { icon: "📶", label: "network" },
-  { icon: "♻️", label: "reset" },
+const ENTRIES: { icon: string; label: TKey; mode: "lang" | "country" }[] = [
+  { icon: "🌐", label: "lang", mode: "lang" },
+  { icon: "📍", label: "country", mode: "country" },
 ];
 
 export default function Settings({ active }: ScreenProps) {
   const nav = useNav();
-  const { settings, update, t, bump } = useSettings();
-  const grid = useGridNav(ENTRIES.length);
-  const [notice, show] = useNotice();
+  const { settings, t } = useSettings();
+  const grid = useGridNav(ENTRIES.length, 2);
 
-  const run = (i: number) => {
-    switch (i) {
-      case 0:
-        nav.push("langsel", { mode: "lang" });
-        break;
-      case 1:
-        nav.push("langsel", { mode: "country" });
-        break;
-      case 2:
-        update({ network: NETWORKS[(NETWORKS.indexOf(settings.network) + 1) % NETWORKS.length] });
-        break;
-      case 3:
-        resetDemoData();
-        bump();
-        show(t("resetDone"));
-        break;
-    }
+  const open = (i: number) => {
+    const entry = ENTRIES[i];
+    if (entry) nav.push("langsel", { mode: entry.mode });
   };
 
   const onKey = (key: Key): boolean => {
     if (grid.onKey(key)) return true;
-    if (key === "OK") return run(grid.index), true;
+    if (key === "OK") return open(grid.index), true;
     if (isDigit(key) && key !== "0") {
       const i = Number(key) - 1;
-      if (i < ENTRIES.length) {
-        grid.setIndex(i);
-        run(i);
-      }
+      if (i < ENTRIES.length) open(i);
       return true;
     }
     return false;
   };
 
-  const value = [
+  const values = [
     settings.lang === "en" ? "English" : "Kiswahili",
     settings.marketId ? market(settings.marketId).name : "–",
-    settings.network,
-    "",
   ];
   const items: GridItem[] = ENTRIES.map((e, i) => ({
-    key: e.label,
+    key: e.mode,
     icon: e.icon,
-    label: (
-      <>
-        {t(e.label)}
-        {value[i] ? <small className="mut"> {value[i]}</small> : null}
-      </>
-    ),
+    label: <>{t(e.label)}<small className="mut"> {values[i]}</small></>,
   }));
 
   return (
-    <Screen active={active} title={t("setting")} soft={{ c: t("ok") }} onKey={onKey} notice={notice}>
+    <Screen active={active} title={t("setting")} soft={{ c: t("ok") }} onKey={onKey}>
       <Grid items={items} sel={grid.index} cols={2} big />
-      <div className="mut hint">Mizani 0.1 · demo prices, not live data</div>
+      <div className="mut hint">Mizani 0.2 · demo prices, not live data</div>
     </Screen>
   );
 }

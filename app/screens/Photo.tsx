@@ -3,15 +3,15 @@
 // "Take a photo instead of typing." The screen only exists when the client reports ImageUpload.
 // On Cloud Phone <input type="file"> opens the native full-screen picker (Phone / MemoryCard).
 // The recogniser (lib/vision.ts) starts loading as soon as this screen opens, so it is usually
-// ready by the time a photo has been chosen. The trader confirms one of three candidates with a
-// single digit; "not a crop" or "none of these" hands over to the text grid instead.
-// `then` is the view to open once the food is known, so this works as a filter for any of them.
+// ready by the time a photo has been chosen. Candidates use the same Up/Down + OK selection model
+// as the product grid; zero returns to the product grid when none is right.
 
 import { useEffect, useRef, useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
-import { Hr, Row } from "../components/ui";
-import { isDigit, type Key } from "../core/keypad";
-import { useNav, type ScreenName } from "../core/router";
+import { Hr, Row, useNotice } from "../components/ui";
+import { useFeature } from "../core/features";
+import type { Key } from "../core/keypad";
+import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
 import { commodity } from "../lib/catalog";
 import { visionProvider, type Candidate, type VisionProvider } from "../lib/vision";
@@ -26,7 +26,7 @@ type State =
 let shared: VisionProvider | null = null;
 const provider = () => (shared ??= visionProvider());
 
-export default function Photo({ active, params }: ScreenProps) {
+export default function Photo({ active }: ScreenProps) {
   const nav = useNav();
   const { settings, update, t } = useSettings();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -34,6 +34,8 @@ export default function Photo({ active, params }: ScreenProps) {
   const [sel, setSel] = useState(0);
   const [warm, setWarm] = useState(false);
   const [pct, setPct] = useState(0);
+  const canPhoto = useFeature("ImageUpload");
+  const [notice, show] = useNotice();
 
   useEffect(() => {
     let alive = true;
@@ -65,30 +67,35 @@ export default function Photo({ active, params }: ScreenProps) {
     }
   };
 
-  const then = (params.then as ScreenName | undefined) ?? "food";
-
   const choose = (i: number) => {
     if (state.step !== "done" || !state.candidates[i]) return;
     const commodityId = state.candidates[i].commodityId;
     update({ foodId: commodityId });
-    nav.replace(then, { commodityId });
+    nav.replace("food", { commodityId });
   };
 
   const onKey = (key: Key): boolean => {
-    if (key === "LSK") return fileRef.current?.click(), true;
-    if (key === "0") return nav.replace("pick", { then }), true;
+    if (key === "LSK") {
+      if (canPhoto) fileRef.current?.click();
+      else show(t("unavailable"));
+      return true;
+    }
+    if (key === "0") return nav.back(), true;
     if (state.step !== "done") {
-      if (key === "OK") return fileRef.current?.click(), true;
+      if (key === "OK") {
+        if (canPhoto) fileRef.current?.click();
+        else show(t("unavailable"));
+        return true;
+      }
       return false;
     }
     if (key === "Up" || key === "Down") return setSel((s) => (s + (key === "Down" ? 1 : state.candidates.length - 1)) % state.candidates.length), true;
     if (key === "OK") return choose(sel), true;
-    if (isDigit(key)) return choose(Number(key) - 1), true;
     return false;
   };
 
   return (
-    <Screen active={active} title={t("isThis")} soft={{ l: t("photo"), c: t("ok") }} onKey={onKey}>
+    <Screen active={active} title={t("isThis")} soft={{ l: t("photo"), c: t("ok") }} onKey={onKey} notice={notice}>
       <div className="thumb">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {url ? <img src={url} alt="" /> : `OK → ${t("photo")}`}
@@ -100,7 +107,7 @@ export default function Photo({ active, params }: ScreenProps) {
       {state.step === "done"
         ? state.candidates.map((cand, i) => {
             const c = commodity(cand.commodityId);
-            return <Row key={c.id} on={i === sel} l={`${i + 1} ${c.icon} ${settings.lang === "sw" ? c.sw : c.en}`} r={`${Math.round(cand.confidence * 100)}%`} />;
+            return <Row key={c.id} on={i === sel} l={`${c.icon} ${settings.lang === "sw" ? c.sw : c.en}`} r={`${Math.round(cand.confidence * 100)}%`} />;
           })
         : null}
       {state.step === "done" || state.step === "unsure" ? (

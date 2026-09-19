@@ -9,14 +9,11 @@ import { isCloudPhone } from "./features";
 
 /** L1 main menu, the L2 views it opens, and the L3 details under them — see docs/ARCHITECTURE.md */
 export type ScreenName =
-  // L1
   | "home"
-  // L2 — food input, then the three filtered views
-  | "foodin" | "pick" | "photo" | "map" | "price" | "history"
-  // L2 — the two simple branches
-  | "ledger" | "settings" | "near"
-  // L3
-  | "food" | "demand" | "deal" | "langsel";
+  | "photo" | "food"
+  | "map" | "price" | "history" | "post"
+  | "demand" | "settings" | "langsel"
+  | "where" | "near";
 
 export type Params = Record<string, unknown>;
 

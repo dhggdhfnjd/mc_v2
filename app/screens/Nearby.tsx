@@ -1,15 +1,16 @@
 "use client";
 
-// L2 NEAR ME — the map around the phone: a 100 km circle, the markets inside it numbered by
-// distance, and one row saying where the location came from (core/location.ts). OK makes the
-// selected market your area. Same basemap rules as the demand map: one Google Static Maps image
-// when NEXT_PUBLIC_GOOGLE_MAPS_KEY is set, plain SVG otherwise; the selection redraws only SVG.
+// L3 NEAR ME — buyer map → 0 → My location. The map around the phone: a 100 km circle, the
+// markets inside it numbered by distance (nearest first, preselected), and one row saying where
+// the location came from (core/location.ts). OK makes the selected market your area, remembers
+// the location for the buyer map, and returns there. Same basemap rules as the buyer map.
 
 import { useEffect, useMemo, useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Row } from "../components/ui";
 import { isDigit, type Key } from "../core/keypad";
 import { demoFix, gpsFix, type Fix } from "../core/location";
+import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
 import { MARKETS, market } from "../lib/catalog";
 import { fmt } from "../lib/money";
@@ -23,13 +24,13 @@ const MAP_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
 const km = (d: number) => (d < 10 ? d.toFixed(1) : fmt(Math.round(d)));
 const metres = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${km(m / 1000)} km`);
 
-export default function Nearby({ active }: ScreenProps) {
+export default function Nearby({ active, params }: ScreenProps) {
+  const nav = useNav();
   const { settings, update, t } = useSettings();
   const [fix, setFix] = useState<Fix | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [sel, setSel] = useState(0);
   const [failed, setFailed] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -73,14 +74,15 @@ export default function Nearby({ active }: ScreenProps) {
   );
 
   const onKey = (key: Key): boolean => {
-    if (key === "LSK") return setAttempt((a) => a + 1), setNotice(null), true;
+    if (key === "LSK") return setAttempt((a) => a + 1), true;
     if (!inside.length) return false;
     if (key === "Down" || key === "Right") return setSel((s) => (s + 1) % inside.length), true;
     if (key === "Up" || key === "Left") return setSel((s) => (s - 1 + inside.length) % inside.length), true;
     if (isDigit(key) && Number(key) >= 1 && Number(key) <= inside.length) return setSel(Number(key) - 1), true;
-    if (key === "OK" && cur) {
-      update({ marketId: cur.m.id });
-      setNotice(`${t("areaSet")}: ${cur.m.name}`);
+    if (key === "OK" && cur && fix) {
+      const located = fix.source !== "market";
+      update({ marketId: cur.m.id, fix: located ? { lat: fix.lat, lon: fix.lon, accuracyM: fix.accuracyM } : null });
+      nav.back(typeof params.backTo === "number" ? params.backTo : 1);
       return true;
     }
     return false;
@@ -106,7 +108,6 @@ export default function Nearby({ active }: ScreenProps) {
       sub={settings.marketId ? market(settings.marketId).name : undefined}
       soft={{ l: t("locate"), c: inside.length ? t("setArea") : undefined }}
       onKey={onKey}
-      notice={notice}
       flush
     >
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", flex: "none" }} role="img" aria-label="map around your location">

@@ -3,7 +3,7 @@
 
 import { COMMODITIES, MARKETS, commodity, market } from "./catalog";
 import { screenReport } from "./trust";
-import type { CrowdReport, Deal, Demand } from "./types";
+import type { CrowdReport, Demand } from "./types";
 
 const DAY = 86_400_000;
 
@@ -113,56 +113,17 @@ export function seedDemands(commodityId: string, now: number): Demand[] {
   MARKETS.forEach((m, i) => {
     if (rnd() < 0.45) return;
     const local = govTodayC(commodityId, m.id);
-    const kept = 6 + Math.floor(rnd() * 5);
     out.push({
       id: `dm-${commodityId}-${m.id}`,
       buyer: BUYERS[Math.floor(rnd() * BUYERS.length)],
       phone: `0700 000 ${String(100 + ((hash(commodityId + m.id) + i) % 900))}`, // demo numbers only
-      kept: [kept, 10],
       commodityId,
       marketId: m.id,
       kg: LOTS[Math.floor(rnd() * LOTS.length)],
       bidC: Math.round(local * (1.03 + rnd() * 0.1)),
       expiresAt: now + Math.floor((1 + rnd() * 5) * DAY),
+      createdAt: now - Math.floor(rnd() * DAY),
     });
   });
   return out;
-}
-
-/** A week of past deals so the ledger has a book to show. Demo data, like every price here. */
-export function seedDeals(now: number): Deal[] {
-  const rnd = prng("deals");
-  const plan: [string, string, "sell" | "buy", number][] = [
-    ["tomato", "busia-ke", "sell", 0],
-    ["maize", "busia-ke", "sell", 1],
-    ["beans", "busia-ug", "buy", 2],
-    ["kale", "busia-ke", "sell", 4],
-    ["onion", "busia-ke", "sell", 6],
-  ];
-  return plan.map(([commodityId, marketId, side, daysAgo], i) => {
-    const c = commodity(commodityId);
-    const unit = c.units[0];
-    const qty = 1 + Math.floor(rnd() * 4);
-    const kg = qty * unit.kg;
-    const refC = govTodayC(commodityId, marketId);
-    // the fourth one fell through, because "no deal" is data too
-    const closed = i !== 3;
-    const priceC = closed ? Math.round(refC * (0.94 + rnd() * 0.14)) : null;
-    return {
-      id: `sd-${i}`,
-      at: now - daysAgo * DAY - Math.floor(rnd() * DAY),
-      side,
-      commodityId,
-      marketId,
-      grade: Math.floor(rnd() * 2),
-      unitId: unit.id,
-      qty,
-      kg,
-      priceC,
-      offerC: Math.round(refC * 0.9),
-      refC,
-      totalKes: priceC === null ? 0 : Math.round((priceC * kg) / 100),
-      photo: i % 2 === 0,
-    };
-  });
 }

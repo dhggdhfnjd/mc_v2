@@ -44,7 +44,7 @@ export interface Market {
   y: number;
 }
 
-export type ReportOrigin = "deal" | "manual" | "bid";
+export type ReportOrigin = "deal" | "manual";
 export type ReportStatus = "accepted" | "quarantined" | "rejected";
 
 export interface CrowdReport {
@@ -80,32 +80,10 @@ export interface Band {
   basis: "crowd" | "official";
 }
 
-export interface Deal {
-  id: string;
-  at: number;
-  side: Side;
-  commodityId: string;
-  marketId: string;
-  grade: number;
-  unitId: string;
-  qty: number;
-  kg: number;
-  /** what was actually agreed, KES cents per kg; null when the deal fell through */
-  priceC: number | null;
-  /** last offer on the table, KES cents per kg */
-  offerC: number | null;
-  /** market reference at the time, KES cents per kg */
-  refC: number;
-  totalKes: number;
-  photo: boolean;
-}
-
 export interface Demand {
   id: string;
   buyer: string;
   phone: string;
-  /** deals kept out of deals agreed, e.g. [9, 10] */
-  kept: [number, number];
   commodityId: string;
   marketId: string;
   kg: number;
@@ -113,5 +91,6 @@ export interface Demand {
   bidC: number;
   /** epoch ms */
   expiresAt: number;
+  createdAt: number;
   mine?: boolean;
 }

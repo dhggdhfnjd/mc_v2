@@ -27,9 +27,10 @@ export default function LangCountry({ active, params }: ScreenProps) {
   const onKey = (key: Key): boolean => {
     if (list.onKey(key)) return true;
     if (key === "OK") {
-      if (country) update({ marketId: MARKETS[list.index].id });
+      // a city picked by hand replaces any device location
+      if (country) update({ marketId: MARKETS[list.index].id, fix: null });
       else update({ lang: LANGS[list.index].id });
-      nav.back();
+      nav.back(typeof params.backTo === "number" ? params.backTo : 1);
       return true;
     }
     return false;

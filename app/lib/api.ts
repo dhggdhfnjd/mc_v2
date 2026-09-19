@@ -5,12 +5,12 @@
 
 import { COMMODITIES, KES_TO_UGX, MARKETS, commodity, market, routeCost } from "./catalog";
 import { fairBand, netPriceC } from "./money";
-import { govTodayC, officialMeta, officialSeries, seedDeals, seedDemands, seedReports, seedReputation } from "./seed";
-import { aggregate, screenReport } from "./trust";
-import type { Band, CrowdReport, CrowdStat, Deal, Demand, ReportStatus, Side } from "./types";
+import { officialMeta, officialSeries, seedDemands, seedReports, seedReputation } from "./seed";
+import { aggregate } from "./trust";
+import type { Band, CrowdReport, CrowdStat, Demand } from "./types";
 
 const DAY = 86_400_000;
-const KEY = "mz.v1.";
+const KEY = "mz.v2.";
 
 // ---------- tiny persistence layer (works without localStorage: tests, private mode) ----------
 const memory = new Map<string, string>();
@@ -30,15 +30,6 @@ function write<T>(key: string, value: T): void {
   } catch {
     memory.set(key, raw); // storage full or blocked: keep working for this session
   }
-}
-
-export function deviceId(): string {
-  let id = read<string>("device", "");
-  if (!id) {
-    id = "me-" + Math.random().toString(36).slice(2, 10);
-    write("device", id);
-  }
-  return id;
 }
 
 // ---------- simulated network, so error handling can be demonstrated ----------
@@ -72,17 +63,12 @@ export interface PriceBundle {
   fetchedAt: number;
 }
 
-function reputationOf(id: string): number {
-  return id === deviceId() ? read<number>("reputation", 0.3) : seedReputation(id);
-}
-
 function allReports(commodityId: string, marketId: string, now: number): CrowdReport[] {
-  const mine = read<CrowdReport[]>("reports", []).filter((r) => r.commodityId === commodityId && r.marketId === marketId);
-  return [...seedReports(commodityId, marketId, now), ...mine];
+  return seedReports(commodityId, marketId, now);
 }
 
 function crowdStat(commodityId: string, marketId: string, now: number): CrowdStat | null {
-  return aggregate(allReports(commodityId, marketId, now), now, reputationOf);
+  return aggregate(allReports(commodityId, marketId, now), now, seedReputation);
 }
 
 function bundle(commodityId: string, marketId: string, grade: number, now: number): PriceBundle {
@@ -120,31 +106,6 @@ function bundle(commodityId: string, marketId: string, grade: number, now: numbe
 export const getPrices = (commodityId: string, marketId: string, grade = 0) =>
   call(() => bundle(commodityId, marketId, grade, Date.now()));
 
-export interface MarketOption {
-  marketId: string;
-  refC: number;
-  netC: number;
-  km: number;
-  crossesBorder: boolean;
-}
-
-/** GET /v1/prices/compare?c&from — where else could I sell (or buy), after transport */
-export const compareMarkets = (commodityId: string, fromId: string, side: Side) =>
-  call(() => {
-    const now = Date.now();
-    return MARKETS.filter((m) => m.id !== fromId)
-      .map((m): MarketOption => {
-        const b = bundle(commodityId, m.id, 0, now);
-        const r = routeCost(fromId, m.id, commodityId);
-        const netC =
-          side === "sell"
-            ? netPriceC(b.band.refC, r.transportC, r.borderC, r.lossRate)
-            : Math.round(b.band.refC * (1 + r.lossRate) + r.transportC + r.borderC);
-        return { marketId: m.id, refC: b.band.refC, netC, km: r.km, crossesBorder: r.crossesBorder };
-      })
-      .sort((a, b) => (side === "sell" ? b.netC - a.netC : a.netC - b.netC));
-  });
-
 export interface HistoryData {
   points: number[]; // oldest → newest, at most 24
   minC: number;
@@ -178,32 +139,6 @@ function historyOf(commodityId: string, marketId: string, days: number): History
 /** GET /v1/trends/history?c&m&range — downsampled: a 240 px screen cannot show more */
 export const getHistory = (commodityId: string, marketId: string, days: number) =>
   call(() => historyOf(commodityId, marketId, days));
-
-export interface SeasonData {
-  index: number[];
-  month: number;
-  low: number[];
-  high: number[];
-  nowVsAvg: number;
-  /** expected price change if the goods are stored 3 months, before storage loss */
-  hold3: number;
-}
-
-/** GET /v1/trends/season?c&m */
-export const getSeason = (commodityId: string) =>
-  call((): SeasonData => {
-    const index = commodity(commodityId).season;
-    const month = new Date().getMonth();
-    const sorted = [...index].sort((a, b) => a - b);
-    return {
-      index,
-      month,
-      low: index.map((v, i) => (v <= sorted[2] ? i : -1)).filter((i) => i >= 0),
-      high: index.map((v, i) => (v >= sorted[9] ? i : -1)).filter((i) => i >= 0),
-      nowVsAvg: index[month] / 100 - 1,
-      hold3: index[(month + 3) % 12] / index[month] - 1,
-    };
-  });
 
 function openDemands(commodityId: string, now: number): Demand[] {
   const mine = read<Demand[]>("demands", []).filter((d) => d.commodityId === commodityId);
@@ -242,150 +177,37 @@ function demandsOf(commodityId: string, fromId: string): DemandView[] {
 export const getDemands = (commodityId: string, fromId: string) =>
   call(() => demandsOf(commodityId, fromId));
 
-export interface FoodDetail {
-  price: PriceBundle;
-  history: HistoryData;
-  /** the buyer who leaves the seller the most after transport, or null when nobody is buying */
-  best: DemandView | null;
-  demands: number;
-}
+// ---------- buyer posts ----------
+export const getMyDemand = (commodityId: string) =>
+  call(() => read<Demand[]>("demands", []).find((d) => d.commodityId === commodityId && d.expiresAt > Date.now()) ?? null);
 
-/** GET /v1/food?c&m — the three panels of the food detail view in the one call that screen gets */
-export const getFoodDetail = (commodityId: string, marketId: string) =>
-  call((): FoodDetail => {
-    const list = demandsOf(commodityId, marketId);
-    return {
-      price: bundle(commodityId, marketId, 0, Date.now()),
-      history: historyOf(commodityId, marketId, 30),
-      best: list[0] ?? null,
-      demands: list.length,
-    };
-  });
-
-/** best open bid net of transport — the "or sell elsewhere" line on the bargaining screen */
-export const bestAlternative = (commodityId: string, fromId: string) =>
-  getDemands(commodityId, fromId).then((list) => list.find((d) => d.marketId !== fromId && !d.mine) ?? null);
-
-// ---------- writes ----------
-export interface ReportInput {
-  commodityId: string;
-  marketId: string;
-  grade: number;
-  side: Side;
-  /** as typed by the user: KES cents per kg at the stated grade */
-  priceC: number;
-  photo?: boolean;
-  origin?: CrowdReport["origin"];
-}
-
-function addReport(input: ReportInput, now: number): ReportStatus {
-  const factor = commodity(input.commodityId).grades[input.grade] ?? 1;
-  const gradeOne = Math.round(input.priceC / factor);
-  const gov = govTodayC(input.commodityId, input.marketId);
-  const current = crowdStat(input.commodityId, input.marketId, now);
-  const status = screenReport(gradeOne, gov, current && current.confidence > 0 ? current.medianC : null);
-  const reports = read<CrowdReport[]>("reports", []);
-  reports.push({
-    id: `r-${now}`,
-    deviceId: deviceId(),
-    origin: input.origin ?? "manual",
-    side: input.side,
-    commodityId: input.commodityId,
-    marketId: input.marketId,
-    priceC: gradeOne,
-    photo: !!input.photo,
-    status,
-    at: now,
-  });
-  write("reports", reports.slice(-200));
-  // behaviour-based reputation: honest reports slowly earn weight, refused ones lose it fast
-  const rep = read<number>("reputation", 0.3);
-  write("reputation", Math.min(1, Math.max(0.1, +(rep + (status === "accepted" ? 0.05 : status === "rejected" ? -0.15 : 0)).toFixed(2))));
-  return status;
-}
-
-/** POST /v1/reports */
-export const postReport = (input: ReportInput) => call(() => addReport(input, Date.now()));
-
-/** POST /v1/deals — the ledger entry is saved first; the anonymous price report follows */
-export const postDeal = (deal: Omit<Deal, "id" | "at">) =>
-  call(() => {
-    const now = Date.now();
-    const saved: Deal = { ...deal, id: `d-${now}`, at: now };
-    write("deals", [saved, ...read<Deal[]>("deals", [])].slice(0, 200));
-    let status: ReportStatus | null = null;
-    if (deal.priceC !== null) {
-      status = addReport(
-        { commodityId: deal.commodityId, marketId: deal.marketId, grade: deal.grade, side: deal.side, priceC: deal.priceC, photo: deal.photo, origin: "deal" },
-        now,
-      );
-    }
-    return { deal: saved, status };
-  });
-
-/** GET /v1/me/deals */
-/** the trader's own deals, newest first, over the seeded book the demo ships with */
-const allDeals = (): Deal[] =>
-  [...read<Deal[]>("deals", []), ...seedDeals(Date.now())].sort((a, b) => b.at - a.at);
-
-export const getDeals = () => call(allDeals);
-
-export interface Summary {
-  count: number;
-  soldKes: number;
-  boughtKes: number;
-  /** average closed price against the market reference at the time; + is good for the user */
-  vsMarket: number | null;
-  stars: number;
-}
-
-/** GET /v1/me/summary?period=week */
-export const getSummary = () =>
-  call((): Summary => {
-    const since = Date.now() - 7 * DAY;
-    const deals = allDeals().filter((d) => d.at >= since && d.priceC !== null);
-    const edge = deals.map((d) => (d.side === "sell" ? d.priceC! / d.refC - 1 : 1 - d.priceC! / d.refC));
-    return {
-      count: deals.length,
-      soldKes: deals.filter((d) => d.side === "sell").reduce((s, d) => s + d.totalKes, 0),
-      boughtKes: deals.filter((d) => d.side === "buy").reduce((s, d) => s + d.totalKes, 0),
-      vsMarket: edge.length ? edge.reduce((s, v) => s + v, 0) / edge.length : null,
-      stars: Math.round(read<number>("reputation", 0.3) * 5),
-    };
-  });
-
-/** POST /v1/demands */
+/** One active post per commodity. Re-posting edits and renews it for three days. */
 export const postDemand = (input: { commodityId: string; marketId: string; kg: number; bidC: number; days: number; phone: string }) =>
   call(() => {
     const now = Date.now();
+    const existing = read<Demand[]>("demands", []);
+    const old = existing.find((x) => x.commodityId === input.commodityId && x.mine);
     const d: Demand = {
-      id: `my-${now}`,
+      id: old?.id ?? `my-${now}`,
       buyer: "You",
       phone: input.phone,
-      kept: [0, 0],
       commodityId: input.commodityId,
       marketId: input.marketId,
       kg: input.kg,
       bidC: input.bidC,
       expiresAt: now + input.days * DAY,
+      createdAt: old?.createdAt ?? now,
       mine: true,
     };
-    write("demands", [d, ...read<Demand[]>("demands", [])].slice(0, 50));
-    // a posted bid is a (weak) price signal too
-    addReport({ commodityId: d.commodityId, marketId: d.marketId, grade: 0, side: "buy", priceC: d.bidC, origin: "bid" }, now);
+    write("demands", [d, ...existing.filter((x) => x.id !== d.id && x.commodityId !== d.commodityId)].slice(0, 50));
     return d;
   });
 
-export function resetDemoData(): void {
-  for (const k of ["reports", "deals", "demands", "reputation"]) {
-    try {
-      if (typeof localStorage !== "undefined") localStorage.removeItem(KEY + k);
-    } catch {
-      /* ignore */
-    }
-    memory.delete(k);
-  }
-}
+export const closeDemand = (id: string) =>
+  call(() => {
+    write("demands", read<Demand[]>("demands", []).filter((d) => d.id !== id));
+    return true;
+  });
 
 // ---------- last-good cache, used by the useApi hook when a call fails ----------
 export const cacheGet = <T,>(key: string) => read<{ at: number; data: T } | null>("cache." + key, null);

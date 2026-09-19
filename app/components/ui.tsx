@@ -95,12 +95,12 @@ export interface GridItem {
   pin?: boolean;
 }
 
-export function Grid({ items, sel, cols = 3, big }: { items: GridItem[]; sel: number; cols?: number; big?: boolean }) {
+export function Grid({ items, sel, cols = 3, big, numbered = true }: { items: GridItem[]; sel: number; cols?: number; big?: boolean; numbered?: boolean }) {
   return (
-    <div className={`g9 c${cols}${big ? " big" : ""}${items.length > cols * 2 ? " r3" : ""}`}>
+    <div className={`g9 c${cols}${big ? " big" : ""}`}>
       {items.map((item, i) => (
         <div key={item.key} className={`cell${i === sel ? " on" : ""}`}>
-          <b>{i + 1}</b>
+          {numbered ? <b>{i + 1}</b> : null}
           {item.pin ? <s>★</s> : null}
           <i>{item.icon}</i>
           {item.label}

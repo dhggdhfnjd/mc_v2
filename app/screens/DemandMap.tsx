@@ -6,7 +6,8 @@
 // on one fixed Google Static Maps image (lib/staticmap.ts); without it, if the image fails, or
 // with ?map=svg, they sit on the hand-drawn SVG schematic.
 // Bubble size = quantity wanted, number = rank by net price. D-pad hops between bubbles;
-// pressing a bubble's number jumps straight to it.
+// pressing a bubble's number jumps straight to it. 0 asks "from where?": device location or a
+// city picked by hand; transport and net are counted from the resulting market.
 
 import { useMemo, useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
@@ -29,10 +30,11 @@ const MAP_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
 // the extra bottom padding keeps bubbles off the Google logo, which must stay visible
 const VIEW = fitView(MARKETS, W / H, { top: 18, right: 16, bottom: 26, left: 16 }, 400);
 const SCALE = W / VIEW.width;
-const GEO = new Map(MARKETS.map((m) => {
-  const p = project(m, VIEW);
-  return [m.id, { x: p.x * SCALE, y: p.y * SCALE }];
-}));
+const toScreen = (p: { lat: number; lon: number }) => {
+  const q = project(p, VIEW);
+  return { x: q.x * SCALE, y: q.y * SCALE };
+};
+const GEO = new Map(MARKETS.map((m) => [m.id, toScreen(m)]));
 const BASEMAP = MAP_KEY ? staticMapUrl(VIEW, MAP_KEY) : "";
 
 interface Bubble {
@@ -45,6 +47,7 @@ interface Bubble {
   r: number;
   best: DemandView;
   kg: number;
+  count: number;
 }
 
 /** nearest bubble inside a 90° cone in the pressed direction */
@@ -78,15 +81,19 @@ export default function DemandMap({ active, params }: ScreenProps) {
   const [forceSvg] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("map") === "svg");
   const geo = !!BASEMAP && !failed && !forceSvg;
   const pos = (id: string) => (geo ? GEO.get(id)! : market(id));
+  // the device location, when the user chose it, is only drawable on the real map
+  const you = geo && settings.fix ? toScreen(settings.fix) : pos(me.id);
 
   const bubbles = useMemo<Bubble[]>(() => {
     const byMarket = new Map<string, Bubble>();
     for (const x of data ?? []) {
       const b = byMarket.get(x.marketId);
-      if (b) b.kg += x.kg; // ranked list: the first one seen per market is its best bid
-      else {
+      if (b) {
+        b.kg += x.kg;
+        b.count += 1;
+      } else {
         const p = geo ? GEO.get(x.marketId)! : market(x.marketId);
-        byMarket.set(x.marketId, { marketId: x.marketId, x: p.x, y: p.y, ax: p.x, ay: p.y, r: 0, best: x, kg: x.kg });
+        byMarket.set(x.marketId, { marketId: x.marketId, x: p.x, y: p.y, ax: p.x, ay: p.y, r: 0, best: x, kg: x.kg, count: 1 });
       }
     }
     const all = [...byMarket.values()];
@@ -98,7 +105,8 @@ export default function DemandMap({ active, params }: ScreenProps) {
   const sel = bubbles.find((b) => b.marketId === selId) ?? bubbles[0] ?? null;
 
   const onKey = (key: Key): boolean => {
-    if (key === "LSK") return nav.replace("foodin", { then: "map" }), true;
+    if (key === "LSK") return nav.home(), true;
+    if (key === "0") return nav.push("where"), true;
     if (!sel) return false;
     if (key === "Up" || key === "Down" || key === "Left" || key === "Right") {
       const next = neighbour(sel, bubbles, key);
@@ -110,7 +118,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
       if (hit) setSelId(hit.marketId);
       return true;
     }
-    if (key === "OK") return nav.push("demand", { demand: sel.best }), true;
+    if (key === "OK") return nav.push("demand", { commodityId: c.id, marketId: sel.marketId }), true;
     return false;
   };
 
@@ -119,7 +127,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
     <Screen
       active={active}
       title={`${t("whoWants")} ${(settings.lang === "sw" ? c.sw : c.en).toLowerCase()}?`}
-      soft={{ l: t("filter"), c: t("open") }}
+      soft={{ l: t("products"), c: t("open") }}
       onKey={onKey}
       flush
     >
@@ -140,6 +148,12 @@ export default function DemandMap({ active, params }: ScreenProps) {
         {MARKETS.filter((m) => !bubbles.some((b) => b.marketId === m.id) && m.id !== me.id).map((m) => (
           <circle key={m.id} cx={pos(m.id).x} cy={pos(m.id).y} r="2.5" fill="#8FAE98" />
         ))}
+        {/* under the bubbles, so a bubble on your own market keeps its number readable */}
+        {geo && settings.fix ? (
+          <circle cx={you.x} cy={you.y} r="4" fill="#6FB7FF" stroke="#fff" strokeWidth="1.5" />
+        ) : (
+          <rect x={you.x - 4} y={you.y - 4} width="8" height="8" fill="#FFD23F" stroke="#0B130F" strokeWidth="1" />
+        )}
         {bubbles
           .filter((b) => Math.hypot(b.x - b.ax, b.y - b.ay) > 1)
           .map((b) => (
@@ -159,7 +173,6 @@ export default function DemandMap({ active, params }: ScreenProps) {
             </g>
           );
         })}
-        <rect x={pos(me.id).x - 4} y={pos(me.id).y - 4} width="8" height="8" fill="#FFD23F" stroke="#0B130F" strokeWidth="1" />
         {sel ? (
           <text x={Math.min(W - 40, Math.max(40, sel.x))} y={sel.y - sel.r - 6 < 12 ? sel.y + sel.r + 12 : sel.y - sel.r - 6} fill="#FFD23F" fontSize="10" fontWeight="700" textAnchor="middle" stroke="#0B130F" strokeWidth="3" paintOrder="stroke">
             {market(sel.marketId).name}
@@ -169,12 +182,17 @@ export default function DemandMap({ active, params }: ScreenProps) {
       <div style={{ padding: "3px 7px 0" }}>
         {sel ? (
           <>
-            <Row l={<b>{sel.best.rank} {market(sel.marketId).name}</b>} r={`${d.sym} ${d.perKg(sel.best.bidC)}/kg · ${fmt(sel.kg)} kg`} />
+            <Row l={<b>{sel.best.rank} {market(sel.marketId).name}</b>} r={`${sel.count} ${t("buyerPosts")} · ${fmt(sel.kg)} kg`} />
             <Row mut l={`${t("transport")} −${d.perKg(sel.best.transportC)} · ${sel.best.km} km`} r={<span className="up">{t("net")} {d.perKg(localC)}</span>} />
           </>
         ) : (
           <div className="mut">{data ? t("noDemand") : "Loading…"}</div>
         )}
+        <Row
+          mut
+          l={settings.fix ? `📍 ${t("myLocation")} · ${me.name}` : `🏙️ ${me.name}`}
+          r={`0 ${t("change")}`}
+        />
       </div>
     </Screen>
   );

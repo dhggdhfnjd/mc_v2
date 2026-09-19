@@ -2,7 +2,7 @@
 
 // Per-device settings. On Cloud Phone, localStorage lives on CloudMosa's servers, encrypted
 // with a device key, and survives until the user picks "Clear data" — good enough for an
-// anonymous profile; the ledger would additionally sync to the API once a phone number is linked.
+// anonymous profile. A phone number is kept only to prefill the buyer-post form.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { setNetwork, type NetworkMode } from "../lib/api";
@@ -11,19 +11,20 @@ import { translate, type Lang, type TKey } from "./i18n";
 export interface Settings {
   lang: Lang;
   marketId: string | null;
-  favorites: string[];
   network: NetworkMode;
-  /** the food the three filtered views are showing; set by every food pick */
+  phone: string;
+  /** last device location the user chose to use; null when the area was picked by hand */
+  fix: { lat: number; lon: number; accuracyM?: number } | null;
+  /** the product most recently opened */
   foodId: string;
 }
 
-const DEFAULTS: Settings = { lang: "en", marketId: null, favorites: ["maize", "beans"], network: "ok", foodId: "maize" };
-const STORAGE_KEY = "mz.v1.settings";
+const DEFAULTS: Settings = { lang: "en", marketId: null, network: "ok", phone: "", foodId: "maize", fix: null };
+const STORAGE_KEY = "mz.v2.settings";
 
 interface SettingsApi {
   settings: Settings;
   update: (patch: Partial<Settings>) => void;
-  toggleFavorite: (commodityId: string) => void;
   t: (key: TKey) => string;
   /** bumped after every write so screens showing derived data refresh */
   dataVersion: number;
@@ -55,20 +56,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings]);
 
   const update = useCallback((patch: Partial<Settings>) => setSettings((s) => ({ ...s, ...patch })), []);
-  const toggleFavorite = useCallback(
-    (id: string) =>
-      setSettings((s) => ({
-        ...s,
-        favorites: s.favorites.includes(id) ? s.favorites.filter((f) => f !== id) : [...s.favorites, id],
-      })),
-    [],
-  );
   const bump = useCallback(() => setDataVersion((v) => v + 1), []);
   const t = useCallback((key: TKey) => translate(settings.lang, key), [settings.lang]);
 
   const value = useMemo(
-    () => ({ settings, update, toggleFavorite, t, dataVersion, bump }),
-    [settings, update, toggleFavorite, t, dataVersion, bump],
+    () => ({ settings, update, t, dataVersion, bump }),
+    [settings, update, t, dataVersion, bump],
   );
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

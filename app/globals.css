@@ -27,7 +27,7 @@ body {
   margin: 0;
   background: #0a0e0c;
   color: var(--fg);
-  font-family: var(--font-rc), "Roboto Condensed", Roboto, "Arial Narrow", Arial, sans-serif;
+  font-family: "Roboto Condensed", Roboto, "Arial Narrow", Arial, sans-serif;
 }
 
 /* Every animation frame is a screen update the user pays for in mobile data. */
@@ -115,9 +115,6 @@ body {
 .qq .g9 { gap: 2px; }
 .qq .cell { height: 37px; padding-top: 0; border-width: 1px; }
 .qq .g9.big .cell { height: 44px; }
-/* a third row of menu cells only fits QQVGA with a smaller icon */
-.qq .g9.big.r3 .cell { height: 36px; }
-.qq .g9.big.r3 .cell i { font-size: 12px; line-height: 14px; }
 /* QQVGA has 120 px of body: drop separators, hints and nice-to-have rows */
 .qq .hr, .qq .hint, .qq .opt, .qq .only-qv { display: none; }
 .only-qq { display: none; }
@@ -155,7 +152,7 @@ body {
 .pad-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
 .pad-dir { display: grid; grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 30px); gap: 3px; justify-content: center; }
 .pad-num { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-.key { height: 34px; border: 0; border-radius: 9px; background: #0d1210; color: #e2f3e4; font: 700 15px var(--font-rc), Arial, sans-serif; cursor: pointer; box-shadow: 0 2px 0 #000; }
+.key { height: 34px; border: 0; border-radius: 9px; background: #0d1210; color: #e2f3e4; font: 700 15px "Roboto Condensed", Arial, sans-serif; cursor: pointer; box-shadow: 0 2px 0 #000; }
 .key small { color: #6f8a78; font-size: 9px; font-weight: 400; margin-left: 3px; }
 .key:active { transform: translateY(2px); box-shadow: none; background: var(--foc); color: #000; }
 .key:focus-visible { outline: 2px solid var(--foc); }
@@ -163,7 +160,7 @@ body {
 .key.dir { height: 30px; font-size: 13px; border-radius: 6px; }
 .key.okk { background: #2b3a33; font-size: 11px; }
 .side { max-width: 340px; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.6; color: #b9c9be; }
-.side h1 { font: 700 26px var(--font-rc), Arial, sans-serif; color: #fff; margin: 0 0 6px; }
+.side h1 { font: 700 26px "Roboto Condensed", Arial, sans-serif; color: #fff; margin: 0 0 6px; }
 .side h2 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: #8fae98; margin: 18px 0 6px; }
 .side kbd { background: #24302a; border-radius: 4px; padding: 1px 6px; color: #fff; font-size: 12px; }
 .side ul { margin: 0; padding-left: 18px; }
