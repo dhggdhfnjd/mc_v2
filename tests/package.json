@@ -1,0 +1,12 @@
+{
+  "name": "farm-price-mvp-tests",
+  "private": true,
+  "type": "module",
+  "description": "Headless-Chrome tests for the keypad-phone MVP (drives the app with real KeyboardEvents).",
+  "scripts": {
+    "test": "node logic.test.mjs && node flow.test.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}

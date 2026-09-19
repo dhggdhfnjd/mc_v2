@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>賣不賣？ Sell or Wait</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1b1f2a; color: #eee; font-family: "Courier New", monospace; display: flex; gap: 32px; justify-content: center; align-items: flex-start; padding: 24px; flex-wrap: wrap; min-height: 100vh; }
+  .phone { width: 300px; background: linear-gradient(#3a4a6b, #222b40); border-radius: 36px; padding: 22px 18px 26px; box-shadow: 0 20px 50px #000a, inset 0 2px 0 #fff3; }
+  .brand { text-align: center; font-size: 11px; letter-spacing: 4px; color: #9ab; margin-bottom: 8px; }
+  /* QVGA 240x320 */
+  .screen { width: 240px; height: 320px; margin: 0 auto; background: #0d1b0f; border: 4px solid #000; border-radius: 4px; overflow: hidden; position: relative; color: #d8ffd0; font-size: 13px; }
+  .bar { background: #14532d; color: #fff; padding: 3px 6px; font-size: 11px; display: flex; justify-content: space-between; height: 20px; }
+  .body { height: 278px; padding: 6px; overflow: hidden; }
+  .soft { position: absolute; bottom: 0; left: 0; right: 0; height: 22px; background: #14532d; display: flex; justify-content: space-between; padding: 3px 8px; font-size: 11px; color: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .cell { background: #16301a; border: 2px solid #1f4a26; border-radius: 6px; text-align: center; padding: 4px 0; height: 62px; position: relative; }
+  .cell.sel { border-color: #ffd23f; background: #2a4a1a; animation: pulse 0.8s infinite alternate; }
+  @keyframes pulse { to { box-shadow: 0 0 8px #ffd23f; } }
+  .cell .emo { font-size: 24px; line-height: 28px; }
+  .cell .nm { font-size: 10px; }
+  .cell .k { position: absolute; top: 1px; left: 4px; font-size: 9px; color: #ffd23f; }
+  .cell .dot { position: absolute; top: 3px; right: 4px; width: 8px; height: 8px; border-radius: 50%; }
+  .g { background: #3ddc5a; } .y { background: #ffd23f; } .r { background: #ff5a4a; }
+  h2 { font-size: 13px; margin-bottom: 4px; color: #ffd23f; }
+  .big { font-size: 26px; font-weight: bold; text-align: center; margin: 4px 0; }
+  .verdict { text-align: center; font-size: 17px; font-weight: bold; padding: 5px; border-radius: 6px; margin: 4px 0; color: #000; }
+  .row { display: flex; justify-content: space-between; padding: 3px 4px; border-radius: 4px; font-size: 12px; }
+  .row.sel { background: #ffd23f; color: #000; }
+  .muted { color: #7fa886; font-size: 10px; }
+  .up { color: #3ddc5a; } .down { color: #ff5a4a; }
+  .input { background: #000; border: 2px solid #ffd23f; font-size: 24px; text-align: center; padding: 4px; margin: 6px 0; letter-spacing: 2px; }
+  .meter { height: 14px; background: linear-gradient(90deg, #ff5a4a, #ffd23f 45%, #3ddc5a 70%); border-radius: 7px; position: relative; margin: 10px 4px; }
+  .needle { position: absolute; top: -5px; width: 4px; height: 24px; background: #fff; border: 1px solid #000; transition: left .4s; }
+  .toast { position: absolute; left: 20px; right: 20px; top: 110px; background: #ffd23f; color: #000; text-align: center; padding: 10px; border-radius: 8px; font-weight: bold; animation: pop .3s; }
+  @keyframes pop { from { transform: scale(.5); opacity: 0; } }
+  .bounce { display: inline-block; animation: bnc .6s infinite alternate; }
+  @keyframes bnc { to { transform: translateY(-5px) rotate(8deg); } }
+  /* keypad */
+  .nav { display: flex; justify-content: space-between; align-items: center; margin: 14px 6px 10px; }
+  .dpad { width: 92px; height: 92px; border-radius: 50%; background: #11172a; position: relative; box-shadow: inset 0 0 0 3px #55658a; }
+  .dpad button { position: absolute; background: none; border: none; color: #9ab; font-size: 14px; width: 30px; height: 30px; cursor: pointer; }
+  .dpad .u { top: 0; left: 31px; } .dpad .d { bottom: 0; left: 31px; } .dpad .l { left: 0; top: 31px; } .dpad .rr { right: 0; top: 31px; }
+  .dpad .ok { top: 27px; left: 27px; width: 38px; height: 38px; border-radius: 50%; background: #55658a; color: #fff; font-size: 11px; }
+  .sk { width: 56px; height: 30px; border-radius: 14px; border: none; background: #11172a; color: #cde; cursor: pointer; font-size: 11px; }
+  .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .keys button { height: 34px; border-radius: 10px; border: none; background: #11172a; color: #fff; font-size: 16px; cursor: pointer; font-family: inherit; box-shadow: 0 2px 0 #000; }
+  .keys button:active, .sk:active { transform: translateY(2px); box-shadow: none; }
+  .keys small { color: #789; font-size: 8px; margin-left: 3px; }
+  .side { max-width: 320px; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.6; color: #bcc; }
+  .side h1 { color: #ffd23f; font-size: 22px; margin-bottom: 8px; }
+  .side kbd { background: #333c55; padding: 1px 6px; border-radius: 4px; color: #fff; }
+  .side li { margin-left: 18px; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="brand">CLOUD PHONE</div>
+  <div class="screen">
+    <div class="bar"><span id="title">賣不賣？</span><span id="status">📶 🔋 09:41</span></div>
+    <div class="body" id="body"></div>
+    <div class="soft"><span id="skL"></span><span id="skC"></span><span id="skR"></span></div>
+  </div>
+  <div class="nav">
+    <button class="sk" data-k="SoftLeft">━</button>
+    <div class="dpad">
+      <button class="u" data-k="ArrowUp">▲</button><button class="d" data-k="ArrowDown">▼</button>
+      <button class="l" data-k="ArrowLeft">◀</button><button class="rr" data-k="ArrowRight">▶</button>
+      <button class="ok" data-k="Enter">OK</button>
+    </div>
+    <button class="sk" data-k="Escape">━</button>
+  </div>
+  <div class="keys" id="keys"></div>
+</div>
+
+<div class="side">
+  <h1>🍅 賣不賣？</h1>
+  <p>給按鍵機農夫的「議價武器」。用鍵盤或點按鍵操作：</p>
+  <ul>
+    <li><kbd>1</kbd>–<kbd>9</kbd> 直接選作物（九宮格＝數字鍵）</li>
+    <li><kbd>↑↓←→</kbd> <kbd>Enter</kbd> 移動／確認</li>
+    <li><kbd>Esc</kbd> 返回（右軟鍵）</li>
+    <li><kbd>Q</kbd> 左軟鍵：檢核中盤商報價 / 回報價格</li>
+    <li><kbd>0</kbd> 在首頁切換「斷電離線模式」</li>
+  </ul>
+  <p style="margin-top:10px">三個核心：<b>賣/等訊號燈</b>、<b>扣運費腐損後的淨收益比價</b>、<b>中盤商報價檢核</b>。資料目前為模擬，之後接 WFP / Agmarknet。</p>
+</div>
+
+<script>
+// ---------- 模擬資料（之後換成 API）----------
+const CROPS = [
+  { id: 'tomato',  emo: '🍅', nm: '番茄',   unit: '籃', base: 8500,  perish: 0.06 },
+  { id: 'maize',   emo: '🌽', nm: '玉米',   unit: '袋', base: 42000, perish: 0.005 },
+  { id: 'rice',    emo: '🌾', nm: '稻米',   unit: '袋', base: 68000, perish: 0.003 },
+  { id: 'onion',   emo: '🧅', nm: '洋蔥',   unit: '袋', base: 35000, perish: 0.02 },
+  { id: 'pepper',  emo: '🌶️', nm: '辣椒',   unit: '籃', base: 12000, perish: 0.05 },
+  { id: 'yam',     emo: '🍠', nm: '山藥',   unit: '堆', base: 15000, perish: 0.01 },
+  { id: 'cassava', emo: '🥔', nm: '木薯',   unit: '袋', base: 18000, perish: 0.03 },
+  { id: 'beans',   emo: '🫘', nm: '豆子',   unit: '袋', base: 95000, perish: 0.003 },
+  { id: 'banana',  emo: '🍌', nm: '芭蕉',   unit: '串', base: 4500,  perish: 0.07 },
+];
+const MARKETS = [
+  { nm: 'Dawanau', km: 12,  mult: 0.94, rush: '06-09' },
+  { nm: 'Kano城',  km: 35,  mult: 1.00, rush: '07-11' },
+  { nm: 'Kaduna',  km: 160, mult: 1.09, rush: '08-12' },
+  { nm: 'Lagos',   km: 990, mult: 1.38, rush: '05-10' },
+];
+const COST_PER_KM = 9; // ₦ / 單位 / km
+
+// 以作物名做種子的偽隨機，讓每次開啟資料一致
+function seeded(s) { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0) / 4294967296); }
+CROPS.forEach(c => {
+  const rnd = seeded(c.id); let p = c.base * (0.85 + rnd() * 0.2);
+  c.hist = Array.from({ length: 7 }, () => (p *= 0.95 + rnd() * 0.12, Math.round(p / 50) * 50));
+  c.price = c.hist[6];
+  c.chg = (c.hist[6] - c.hist[0]) / c.hist[0];
+  const mom = (c.hist[6] - c.hist[4]) / c.hist[4];
+  // 易腐作物：漲就快賣；可儲存作物：漲勢中可以等
+  if (c.perish > 0.03) c.sig = c.chg > -0.03 ? 'g' : 'y';
+  else c.sig = mom > 0.03 ? 'y' : c.chg > 0.05 ? 'g' : c.chg < -0.05 ? 'r' : 'y';
+});
+const SIG = { g: ['今天賣！', '#3ddc5a', '💰'], y: ['再等等', '#ffd23f', '⏳'], r: ['先別賣', '#ff5a4a', '🛑'] };
+const fmt = n => '₦' + Math.round(n).toLocaleString();
+
+// ---------- 狀態 & 畫面 ----------
+const S = { view: 'home', sel: 0, crop: null, mk: 0, input: '', offline: false, toast: null, reports: 0 };
+const $ = id => document.getElementById(id);
+
+function net(c, m) { // 淨收益 = 市價 − 運費 − 路途腐損
+  const gross = c.price * m.mult, ship = m.km * COST_PER_KM, rot = gross * c.perish * (m.km / 100);
+  return { gross, ship, rot, net: gross - ship - rot };
+}
+function spark(h) {
+  const mn = Math.min(...h), mx = Math.max(...h);
+  const pts = h.map((v, i) => `${i * 36 + 6},${34 - (v - mn) / (mx - mn || 1) * 28}`).join(' ');
+  return `<svg width="228" height="40"><polyline points="${pts}" fill="none" stroke="#3ddc5a" stroke-width="2"/>${h.map((v, i) => `<circle cx="${i * 36 + 6}" cy="${34 - (v - mn) / (mx - mn || 1) * 28}" r="2.5" fill="#ffd23f"/>`).join('')}</svg>`;
+}
+
+const VIEWS = {
+  home() {
+    soft('', '選擇', S.offline ? '上線' : '');
+    return `<div class="grid">${CROPS.map((c, i) => `<div class="cell ${i === S.sel ? 'sel' : ''}"><span class="k">${i + 1}</span><span class="dot ${c.sig}"></span><div class="emo">${c.emo}</div><div class="nm">${c.nm}</div><div class="nm ${c.chg >= 0 ? 'up' : 'down'}">${c.chg >= 0 ? '▲' : '▼'}${Math.abs(c.chg * 100).toFixed(0)}%</div></div>`).join('')}</div>
+    <div class="muted" style="text-align:center;margin-top:6px">${S.offline ? '⚡ 離線：昨天 18:20 的行情' : '🟢賣 🟡等 🔴別賣 ｜ 已回報 ' + S.reports + ' 筆'}</div>`;
+  },
+  crop() {
+    const c = S.crop, [txt, col, ico] = SIG[c.sig];
+    const best = MARKETS.map(m => ({ m, ...net(c, m) })).sort((a, b) => b.net - a.net)[0];
+    soft('檢核報價', '比市場', '返回');
+    return `<h2>${c.emo} ${c.nm} <span class="muted">/ ${c.unit}</span></h2>
+    <div class="big">${fmt(c.price)} <span style="font-size:13px" class="${c.chg >= 0 ? 'up' : 'down'}">${c.chg >= 0 ? '▲' : '▼'}${Math.abs(c.chg * 100).toFixed(0)}%</span></div>
+    <div class="verdict" style="background:${col}"><span class="bounce">${ico}</span> ${txt}</div>
+    <div class="muted">7 日走勢</div>${spark(c.hist)}
+    <div class="row"><span>🏆 最賺市場</span><b>${best.m.nm}</b></div>
+    <div class="row"><span>到手淨收</span><b class="up">${fmt(best.net)}</b></div>
+    <div class="muted" style="margin-top:4px">${c.perish > 0.03 ? '⚠ 易腐作物，放越久賠越多' : '📦 可儲存，漲勢中可以等'}</div>`;
+  },
+  markets() {
+    const c = S.crop, rows = MARKETS.map(m => ({ m, ...net(c, m) })), top = Math.max(...rows.map(r => r.net));
+    const r = rows[S.mk];
+    soft('回報價格', '', '返回');
+    return `<h2>${c.emo} 去哪賣最賺？</h2>
+    ${rows.map((x, i) => `<div class="row ${i === S.mk ? 'sel' : ''}"><span>${x.net === top ? '🏆' : '　'}${x.m.nm} <small>${x.m.km}km</small></span><b>${fmt(x.net)}</b></div>`).join('')}
+    <div style="border-top:1px dashed #3a6;margin:6px 0;padding-top:5px">
+      <div class="row"><span>市價</span><span>${fmt(r.gross)}</span></div>
+      <div class="row"><span>🚚 運費</span><span class="down">−${fmt(r.ship)}</span></div>
+      <div class="row"><span>🦠 路途腐損</span><span class="down">−${fmt(r.rot)}</span></div>
+      <div class="row"><span>🕐 人潮高峰</span><span>${r.m.rush}時</span></div>
+    </div>
+    <div class="muted">🛡 帶現金回程請趁白天、結伴同行</div>`;
+  },
+  check() {
+    const c = S.crop, offer = +S.input || 0, ratio = offer / c.price;
+    const pos = Math.max(0, Math.min(1, (ratio - 0.5) / 0.7));
+    let msg = '用數字鍵輸入對方開的價', ico = '🤔';
+    if (offer) {
+      if (ratio < 0.8) { msg = `低於市價 ${((1 - ratio) * 100).toFixed(0)}%！被坑了`; ico = '😡'; }
+      else if (ratio < 0.95) { msg = `偏低 ${((1 - ratio) * 100).toFixed(0)}%，可以再喊`; ico = '🤨'; }
+      else if (ratio <= 1.1) { msg = '合理價，可以成交'; ico = '🤝'; }
+      else { msg = '高於市價，快賣！'; ico = '🤑'; }
+    }
+    soft('清除', '', '返回');
+    return `<h2>🕵 中盤商報價檢核</h2>
+    <div class="muted">${c.emo} ${c.nm} 每${c.unit}，對方出價：</div>
+    <div class="input">₦${S.input || '_'}</div>
+    <div class="meter"><div class="needle" style="left:${pos * 100}%"></div></div>
+    <div class="row muted"><span>坑</span><span>合理 ${fmt(c.price * 0.95)}–${fmt(c.price * 1.1)}</span><span>賺</span></div>
+    <div class="big"><span class="bounce">${ico}</span></div>
+    <div style="text-align:center;font-weight:bold">${msg}</div>`;
+  },
+  report() {
+    soft('清除', '送出', '返回');
+    return `<h2>📣 回報成交價</h2>
+    <div class="muted">${S.crop.emo} ${S.crop.nm} @ ${MARKETS[S.mk].nm}，你剛賣多少？</div>
+    <div class="input">₦${S.input || '_'}</div>
+    <div class="muted" style="line-height:1.5">你的回報會幫到附近的農夫 🙌<br>沒有官方資料的市場，就靠大家按 3 個鍵補起來。<br><br>⭐ 每回報一次 +1 信譽星</div>`;
+  },
+};
+
+function soft(l, c, r) { $('skL').textContent = l; $('skC').textContent = c; $('skR').textContent = r; }
+function render() {
+  $('body').innerHTML = VIEWS[S.view]() + (S.toast ? `<div class="toast">${S.toast}</div>` : '');
+  $('status').textContent = (S.offline ? '⚡離線 🔋' : '📶 🔋') + ' 09:41';
+  $('title').textContent = { home: '賣不賣？', crop: '行情', markets: '淨收益比價', check: '報價檢核', report: '回報' }[S.view];
+}
+function toast(t) { S.toast = t; render(); setTimeout(() => { S.toast = null; render(); }, 1400); }
+function go(v) { S.view = v; S.input = ''; render(); }
+
+// ---------- 按鍵處理（每個畫面一張表）----------
+function onKey(k) {
+  if (S.toast) return;
+  const digit = /^[0-9]$/.test(k) ? +k : null, v = S.view;
+  if (v === 'home') {
+    if (digit >= 1) { S.sel = digit - 1; S.crop = CROPS[S.sel]; return go('crop'); }
+    if (digit === 0) { S.offline = !S.offline; return toast(S.offline ? '⚡ 斷電了！改用快取行情' : '📶 已連線，行情更新'); }
+    const mv = { ArrowUp: -3, ArrowDown: 3, ArrowLeft: -1, ArrowRight: 1 }[k];
+    if (mv) S.sel = (S.sel + mv + 9) % 9;
+    if (k === 'Enter') { S.crop = CROPS[S.sel]; return go('crop'); }
+    if (k === 'Escape' && S.offline) { S.offline = false; return toast('📶 已連線，行情更新'); }
+  } else if (v === 'crop') {
+    if (k === 'Enter') { S.mk = 0; return go('markets'); }
+    if (k === 'SoftLeft') return go('check');
+    if (k === 'Escape') return go('home');
+  } else if (v === 'markets') {
+    if (k === 'ArrowUp') S.mk = (S.mk + 3) % 4;
+    if (k === 'ArrowDown') S.mk = (S.mk + 1) % 4;
+    if (k === 'SoftLeft') return go('report');
+    if (k === 'Escape') return go('crop');
+  } else { // check / report：數字輸入
+    if (digit !== null && S.input.length < 7) S.input += digit;
+    if (k === 'SoftLeft' || k === 'Backspace') S.input = S.input.slice(0, -1);
+    if (k === 'Escape') return go(v === 'check' ? 'crop' : 'markets');
+    if (k === 'Enter' && v === 'report' && S.input) { S.reports++; S.view = 'markets'; S.input = ''; return toast('🎉 謝謝回報！⭐+1'); }
+  }
+  render();
+}
+
+// 實體鍵盤
+addEventListener('keydown', e => {
+  const k = e.key === 'q' || e.key === 'Q' ? 'SoftLeft' : e.key;
+  if (/^[0-9]$|^Arrow|^Enter$|^Escape$|^Backspace$|^SoftLeft$/.test(k)) { e.preventDefault(); onKey(k); }
+});
+// 螢幕按鍵
+const T9 = ['', 'abc', 'def', 'ghi', 'jkl', 'mno', 'pqrs', 'tuv', 'wxyz'];
+$('keys').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, '*', 0, '#'].map(n => `<button data-k="${n}">${n}<small>${T9[n - 1] || ''}</small></button>`).join('');
+document.querySelectorAll('[data-k]').forEach(b => b.onclick = () => onKey(b.dataset.k));
+render();
+</script>
+</body>
+</html>

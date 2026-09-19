@@ -1,0 +1,998 @@
+<title>Mizani 系統架構</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@700;900&family=Roboto+Condensed:wght@400;700&display=swap">
+<style>
+:root{
+  --ground:#F1F4EE; --panel:#FAFCF8; --ink:#17211B; --ink2:#4C5A51; --line:#D1D9CE;
+  --accent:#0D6A4D; --accent-soft:#D9EAE0;
+  --amber:#8A5700; --amber-soft:#F4E6C6;
+  --rust:#A1301D; --rust-soft:#F4DBD4;
+  --code:#E6ECE3;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101512; --panel:#181F1B; --ink:#E3EAE4; --ink2:#A2B0A6; --line:#2A352E;
+    --accent:#5BC9A1; --accent-soft:#16342A;
+    --amber:#E4B65C; --amber-soft:#382C12;
+    --rust:#EE907F; --rust-soft:#3B1D18;
+    --code:#1E2722;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101512; --panel:#181F1B; --ink:#E3EAE4; --ink2:#A2B0A6; --line:#2A352E;
+  --accent:#5BC9A1; --accent-soft:#16342A;
+  --amber:#E4B65C; --amber-soft:#382C12;
+  --rust:#EE907F; --rust-soft:#3B1D18;
+  --code:#1E2722;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%}
+.wrap{max-width:1080px;margin-inline:auto;padding-inline:20px;padding-block:48px 96px}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* masthead */
+.eyebrow{font:600 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.06em;color:var(--ink2);margin:0 0 14px;text-transform:uppercase}
+h1{font-family:"Noto Serif TC","Songti TC",serif;font-weight:900;font-size:clamp(2.1rem,6vw,3.4rem);line-height:1.12;margin:0 0 16px;text-wrap:balance}
+h1 small{display:block;font:400 15px/1.5 "Noto Sans TC",sans-serif;color:var(--ink2);margin-top:10px}
+.lede{font-size:1.12rem;max-width:40em;margin:0 0 24px}
+.pillars{max-width:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0;border-top:2px solid var(--ink);border-bottom:1px solid var(--line);margin:0 0 20px;padding:0;list-style:none}
+.pillars li{padding:14px 16px 16px 0;font-size:14px;line-height:1.6;color:var(--ink2)}
+.pillars b{display:block;font-family:"Noto Serif TC",serif;font-size:1.25rem;color:var(--ink);margin-bottom:2px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13.5px;color:var(--ink2);margin:0}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+
+/* tags */
+.tag{display:inline-block;font:700 11px/1 "Noto Sans TC",sans-serif;letter-spacing:.04em;padding:4px 6px 3px;border-radius:3px;white-space:nowrap;vertical-align:2px}
+.t-disc{background:var(--accent-soft);color:var(--accent)}
+.t-add{background:var(--amber-soft);color:var(--amber)}
+.t-ver{background:var(--rust-soft);color:var(--rust)}
+
+/* toc */
+.toc{margin:36px 0 0;padding:18px 0 0;border-top:1px solid var(--line)}
+.toc ol{list-style:none;margin:0;padding:0;columns:2 260px;column-gap:40px;font-size:15px}
+.toc li{break-inside:avoid;padding:3px 0}
+.toc a{text-decoration:none;color:var(--ink)}
+.toc a:hover{color:var(--accent);text-decoration:underline}
+.toc .n{font:600 12px "IBM Plex Mono",monospace;color:var(--ink2);display:inline-block;width:2.2em}
+
+/* sections */
+section{margin-top:80px}
+h2{font-family:"Noto Serif TC","Songti TC",serif;font-weight:700;font-size:1.7rem;line-height:1.3;margin:0 0 18px;padding-top:18px;border-top:2px solid var(--ink);text-wrap:balance}
+h2 .n{font:600 13px "IBM Plex Mono",monospace;color:var(--ink2);margin-right:12px;vertical-align:4px}
+h3{font-size:1.08rem;font-weight:700;margin:36px 0 8px;line-height:1.5}
+h3 .tag{margin-left:6px}
+p{margin:0 0 14px;max-width:44em}
+ul,ol{margin:0 0 14px;padding-left:1.3em;max-width:44em}
+li{margin-bottom:6px}
+code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.86em;background:var(--code);padding:1px 5px;border-radius:3px;word-break:break-word}
+pre{background:var(--code);padding:16px 18px;border-radius:5px;overflow-x:auto;font:400 13px/1.65 "IBM Plex Mono",ui-monospace,monospace;margin:0 0 18px;color:var(--ink)}
+pre code{background:none;padding:0;font-size:inherit}
+.note{border:1px solid var(--line);background:var(--panel);padding:14px 18px;border-radius:4px;margin:18px 0;max-width:46em;font-size:15px}
+.note p:last-child,.note ul:last-child{margin-bottom:0}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px 40px}
+
+/* tables */
+.scroll{overflow-x:auto;margin:0 0 20px}
+table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.6}
+th{font-weight:700;text-align:left;border-bottom:2px solid var(--ink);padding:8px 12px 8px 0;white-space:nowrap;font-size:13px}
+td{border-bottom:1px solid var(--line);padding:9px 12px 9px 0;vertical-align:top}
+td:first-child,th:first-child{padding-left:0}
+.mono,td.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;font-variant-numeric:tabular-nums}
+.w760{min-width:760px}.w880{min-width:880px}
+td .tag{vertical-align:1px}
+.st-ok{color:var(--accent);font-weight:700;white-space:nowrap}.st-no{color:var(--rust);font-weight:700;white-space:nowrap}.st-open{color:var(--amber);font-weight:700;white-space:nowrap}
+#s1 td.mono{white-space:nowrap}
+
+/* flow */
+.flow{list-style:none;padding:0;margin:0 0 10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;max-width:none}
+.flow li{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:10px 12px 12px;font-size:14px;line-height:1.5;margin:0}
+.flow .s{display:block;font:600 12px "IBM Plex Mono",monospace;color:var(--accent);margin-bottom:3px}
+.flow li.opt{border-style:dashed}
+.branch{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:8px 0 0;max-width:none}
+.branch li{font-size:13.5px;border:1px solid var(--line);border-radius:999px;padding:3px 12px;margin:0;background:var(--panel)}
+
+/* phone screens: a deliberately single-look LCD world, true 240x320 pixels */
+.screens{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:34px 22px;margin:24px 0 8px}
+.shot{margin:0;display:flex;flex-direction:column;gap:10px}
+.shot figcaption{font-size:13.5px;line-height:1.6;color:var(--ink2);max-width:250px}
+.shot figcaption b{color:var(--ink)}
+.scr{box-sizing:content-box;width:240px;height:320px;border:5px solid #1C2420;border-radius:7px;background:#0B130F;color:#E2F3E4;font-family:"Roboto Condensed","Roboto","Arial Narrow",Arial,sans-serif;font-size:16px;line-height:1.25;display:flex;flex-direction:column;overflow:hidden}
+.scr-h{flex:none;height:40px;background:#0D6A4D;color:#FFFFFF;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 8px;white-space:nowrap}
+.scr-h small{font-weight:400;font-size:12px;color:#CDE9DC}
+.scr-b{flex:1;min-height:0;padding:7px 8px;display:flex;flex-direction:column;gap:5px}
+.scr-b.flush{padding:0;gap:0}
+.scr-k{flex:none;height:26px;background:#15211B;color:#CFE3D4;font-size:13px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 8px}
+.scr-k span:nth-child(2){font-weight:700;color:#FFD23F}
+.scr-k span:last-child{text-align:right}
+.r{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.big{font-size:22px;font-weight:700;color:#FFFFFF}
+.mut{color:#8FAE98;font-size:12px}
+.up{color:#5BE08A}.dn{color:#FF8A78}
+.inp{background:#000000;border:2px solid #FFD23F;border-radius:3px;padding:1px 6px;font-size:20px;font-weight:700;color:#FFFFFF;text-align:right;min-width:96px}
+.vd{border-radius:3px;padding:4px 6px;font-weight:700;font-size:16px}
+.vd.bad{background:#C8402E;color:#FFFFFF}.vd.good{background:#2E9E62;color:#04140B}
+.hr{border-top:1px dashed #2C4436;margin:2px 0}
+.cf{display:inline-flex;gap:2px;vertical-align:-1px;margin-right:4px}.cf i{width:5px;height:11px;background:#5BE08A;border-radius:1px}.cf i.off{background:#2C4436}
+.g9{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.c{height:62px;background:#13211A;border:2px solid #1E3327;border-radius:4px;position:relative;text-align:center;font-size:12px;padding-top:3px;color:#E2F3E4}
+.c.on{border-color:#FFD23F;background:#1D3325}
+.c b{position:absolute;left:4px;top:1px;color:#FFD23F;font-size:11px}
+.c s{position:absolute;right:4px;top:0;color:#FFD23F;font-size:11px;text-decoration:none}
+.c i{display:block;font-style:normal;font-size:24px;line-height:32px}
+.opt3{display:flex;flex-direction:column;gap:3px}
+.opt3 div{display:flex;justify-content:space-between;padding:3px 6px;border-radius:3px}
+.opt3 .on{background:#FFD23F;color:#171700;font-weight:700}
+.thumb{height:66px;border:1px dashed #5E7A68;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#8FAE98;font-size:12px}
+.bars{display:flex;align-items:flex-end;gap:3px;height:92px;padding-top:4px}
+.bars span{flex:1;background:#3B6B50;border-radius:1px 1px 0 0}
+.bars .lo{background:#2E9E62}.bars .hi{background:#D9982B}.bars .now{outline:2px solid #FFD23F;outline-offset:1px}
+.mths{display:flex;gap:3px;font-size:11px;color:#8FAE98}
+.mths span{flex:1;text-align:center}
+.card{background:#F4F6EE;color:#10180F;flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:10px;text-align:center}
+.card .p{font-size:40px;font-weight:700;line-height:1.05}
+.card .s{font-size:13px;color:#3D4A40}
+
+/* diagram */
+.fig{margin:20px 0 8px}
+.fig figcaption{font-size:14px;color:var(--ink2);margin-top:10px;max-width:46em}
+.dg{display:block;width:100%;min-width:920px;height:auto;color:var(--ink)}
+.dg text{font-family:"Noto Sans TC","PingFang TC",sans-serif;fill:currentColor}
+.dg .bx{fill:var(--panel);stroke:currentColor;stroke-width:1.3}
+.dg .bx2{fill:var(--ground);stroke:currentColor;stroke-opacity:.5;stroke-width:1}
+.dg .ln{stroke:currentColor;stroke-width:1.3;fill:none}
+.dg .hot{stroke:var(--accent);stroke-width:2.2;fill:none}
+.dg .mk{fill:currentColor}.dg .mk-hot{fill:var(--accent)}
+.dg .t1{font-weight:700;font-size:13px}
+.dg .t2{font-size:12px}
+.dg .t3{font-size:11px;fill:var(--ink2)}
+.dg .tm{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px}
+.dg .th{fill:var(--accent);font-weight:700;font-size:11.5px}
+
+/* steps */
+.steps{list-style:none;counter-reset:st;padding:0;margin:0 0 18px;max-width:46em}
+.steps li{counter-increment:st;position:relative;padding:0 0 14px 44px;margin:0}
+.steps li::before{content:counter(st);position:absolute;left:0;top:2px;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--accent);color:var(--accent);font:600 13px/26px "IBM Plex Mono",monospace;text-align:center}
+.steps b{display:block}
+.src{font-size:13.5px;color:var(--ink2);columns:2 320px;column-gap:40px;padding-left:1.2em;max-width:none}
+.src li{break-inside:avoid}
+footer{margin-top:72px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink2)}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">CloudMosa Cloud Phone 競賽 · 主題 3 農產品即時價格 · 2026-09-19</p>
+  <h1>Mizani 系統架構<small>Mizani 是斯瓦希里語的「秤」，工作代號，可以換。</small></h1>
+  <p class="lede">給 Busia 邊境小商販和農夫的按鍵機 App。這一頁先把 9/19 兩段討論錄音整理成規格，再嚴格照討論結果畫出整套系統；我另外加的東西都標了「補充」，方便你們逐項取捨。</p>
+  <ul class="pillars">
+    <li><b>查得到價</b>官方每公斤價格和商販回報價並排，附日期和信心格。</li>
+    <li><b>算得出錢</b>袋、罐、公斤互換，先令雙幣，扣掉路費後的淨價。</li>
+    <li><b>談得贏價</b>打進對方開的價，立刻知道差多少、該還多少、底線在哪。</li>
+    <li><b>找得到買家</b>買家貼需求，地圖上冒泡泡，挑淨價最高的去賣。</li>
+  </ul>
+  <div class="note" style="margin:0 0 18px">
+    <p><b>Prototype 已上線。</b>照官方 Meichu demo 的技術棧做的（Next.js 15 靜態匯出、React 19、TypeScript、Tailwind 4、GitHub Actions 發佈到 gh-pages），32 個單元測試、CI 全綠。桌面開會看到手機外框和可點的鍵盤；視窗寬度 330px 以下（實機或 Cloud Phone 模擬器）自動全螢幕。</p>
+    <p>線上版：<a href="https://dhggdhfnjd.github.io/mizani/">dhggdhfnjd.github.io/mizani</a>　原始碼：<a href="https://github.com/dhggdhfnjd/mizani">github.com/dhggdhfnjd/mizani</a></p>
+  </div>
+  <p class="legend">
+    <span><span class="tag t-disc">討論</span>錄音裡團隊講定的（D 編號對回 §1）</span>
+    <span><span class="tag t-add">補充</span>我依 Busia 場景和你的要求加的</span>
+    <span><span class="tag t-ver">待驗證</span>還沒在實機或資料源上確認</span>
+  </p>
+</header>
+
+<nav class="toc" aria-label="目錄">
+  <ol>
+    <li><a href="#s1"><span class="n">1</span>錄音整理：你們講定了什麼</a></li>
+    <li><a href="#s2"><span class="n">2</span>Busia 場景與五個設計推論</a></li>
+    <li><a href="#s3"><span class="n">3</span>主流程與畫面</a></li>
+    <li><a href="#s4"><span class="n">4</span>算錢與議價引擎</a></li>
+    <li><a href="#s5"><span class="n">5</span>需求看板與泡泡地圖</a></li>
+    <li><a href="#s6"><span class="n">6</span>拍照辨識</a></li>
+    <li><a href="#s7"><span class="n">7</span>回報可信度：把未決的爭論定案</a></li>
+    <li><a href="#s8"><span class="n">8</span>系統架構總圖</a></li>
+    <li><a href="#s9"><span class="n">9</span>前端架構</a></li>
+    <li><a href="#s10"><span class="n">10</span>後端與資料管線</a></li>
+    <li><a href="#s11"><span class="n">11</span>資料模型與 API</a></li>
+    <li><a href="#s12"><span class="n">12</span>容錯與邊界情況</a></li>
+    <li><a href="#s13"><span class="n">13</span>對應評分項目</a></li>
+    <li><a href="#s14"><span class="n">14</span>里程碑、待驗證、與現有原型的銜接</a></li>
+  </ol>
+</nav>
+
+<!-- ===================================================== 1 -->
+<section id="s1">
+  <h2><span class="n">1</span>錄音整理：你們講定了什麼</h2>
+  <p>「新錄音 31」長 6 分 01 秒，是主討論；「新錄音 93」長 34 秒，補了地圖的想法。兩段都在本機離線轉錄，再依上下文校正（語音辨識把「記帳」聽成「機長」、「Season」聽成「Gson」、「農夫」聽成「人夫」這類已修正）。哪一條整理錯了直接跟我說。</p>
+  <div class="scroll">
+  <table class="w880">
+    <thead><tr><th>#</th><th>時間</th><th>討論內容</th><th>狀態</th><th>落在架構的哪裡</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">D1</td><td class="mono">31 · 00:00</td><td>進 App 第一個畫面選 product（tomato、corn…），有「收藏」清單</td><td class="st-ok">共識</td><td>§3 S1、<code>favorites</code></td></tr>
+      <tr><td class="mono">D2</td><td class="mono">31 · 00:16</td><td>選完 product，選 Area（自己所在的地區）</td><td class="st-ok">共識</td><td>§3 S2、<code>markets</code></td></tr>
+      <tr><td class="mono">D3</td><td class="mono">31 · 00:30</td><td>顯示兩個參考價：官方每公斤價格、使用者回報價格</td><td class="st-ok">共識</td><td>§3 S3、<code>GET /v1/prices</code></td></tr>
+      <tr><td class="mono">D4</td><td class="mono">31 · 00:42</td><td>輸入 quantity，告訴你這批該是多少錢</td><td class="st-ok">共識</td><td>§4 算錢引擎</td></tr>
+      <tr><td class="mono">D5</td><td class="mono">31 · 00:50</td><td>最後問「剛剛有沒有成交？成交價多少？」，成交價變成群眾資料點</td><td class="st-ok">共識</td><td>§3 S5、<code>deals → crowd_reports</code></td></tr>
+      <tr><td class="mono">D6</td><td class="mono">31 · 01:00</td><td>送貨到家、直接下單的想法；疑慮是要串物流</td><td class="st-no">否決</td><td>不做物流、不做金流</td></tr>
+      <tr><td class="mono">D7</td><td class="mono">31 · 01:31</td><td>改做「反向蝦皮」：買家貼「地點＋品項＋200 公斤＋願意收的價格」，賣家自己送過去；順便整理出市場價</td><td class="st-ok">共識</td><td>§5 需求看板、<code>demands</code></td></tr>
+      <tr><td class="mono">D8</td><td class="mono">31 · 02:02<br>93 全段</td><td>需求用地圖呈現：輸入品項，各地冒出需求泡泡和價錢；農夫比路費、比價錢，決定賣給誰</td><td class="st-ok">共識</td><td>§5 泡泡地圖、<code>GET /v1/map</code>、<code>routes</code></td></tr>
+      <tr><td class="mono">D9</td><td class="mono">31 · 02:15</td><td>History price 就是走勢</td><td class="st-ok">共識</td><td><code>GET /v1/trends/history</code></td></tr>
+      <tr><td class="mono">D10</td><td class="mono">31 · 02:20</td><td>Season 是月、季的價格規律，「像訂機票那種感覺」</td><td class="st-ok">共識</td><td>§3 低價月曆、<code>GET /v1/trends/season</code></td></tr>
+      <tr><td class="mono">D11</td><td class="mono">31 · 02:39</td><td>Report：新增回報，品項預設剛選的那個，另填 market、quality</td><td class="st-ok">共識</td><td><code>POST /v1/reports</code></td></tr>
+      <tr><td class="mono">D12</td><td class="mono">31 · 03:04</td><td>個人交易紀錄（記帳）：幫他存每一筆成交、可以回查；這是他願意回報成交的誘因</td><td class="st-ok">共識</td><td>§3 My deals、<code>deals</code></td></tr>
+      <tr><td class="mono">D13</td><td class="mono">31 · 04:22</td><td>風險：有人一直輸入低價把價格拉低。想法：成交後拍張照</td><td class="st-open">未決</td><td>§7</td></tr>
+      <tr><td class="mono">D14</td><td class="mono">31 · 04:36</td><td>主要數據以 Government 為主，回報價為輔</td><td class="st-ok">共識</td><td>§7 第一道防線</td></tr>
+      <tr><td class="mono">D15</td><td class="mono">31 · 05:09</td><td>回報者信用分；參考的 App 有 AI confidence；身分認證難做，認證了還是能亂報（買 400 說 200）；擔心「一筆就把它搞爛」（可可一口 1000）</td><td class="st-open">未決</td><td>§7 建議定案</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note">
+    <p><b>錄音沒談到、但架構必須回答的五件事。</b>買賣雙方怎麼聯絡（§5）；只有方向鍵的 240×320 螢幕怎麼操作地圖（§5）；D13、D15 的防灌水到底選哪一種（§7）；需求貼文本身也可能是假的（§5）；袋、罐、箱這些單位和肯亞、烏干達兩種先令怎麼換（§4）。</p>
+  </div>
+</section>
+
+<!-- ===================================================== 2 -->
+<section id="s2">
+  <h2><span class="n">2</span>Busia 場景與五個設計推論</h2>
+  <p>你指定的 J-PAL 評估是 Eleanor Wiseman 和 Elisabeth Sadoulet 在肯亞西部 Busia 做的隨機對照試驗，合作方是 Sauti East Africa。先把數字放在一起：</p>
+  <div class="scroll">
+  <table class="w760">
+    <thead><tr><th>項目</th><th>數字</th></tr></thead>
+    <tbody>
+      <tr><td>樣本</td><td>1,100 位小規模商販。多數是來自鄉村、正式教育不多的女性；80% 賣農產品；55% 做跨境，其中 63% 走非正式通道</td></tr>
+      <tr><td>資訊缺口</td><td>不知道官方口岸到底要繳多少稅；不知道哪個市場買最便宜、哪個市場賣最好</td></tr>
+      <tr><td>介入</td><td>Sauti 平台（撥代碼的 USSD 文字選單）：東非各市場價格、正式口岸應繳稅額、匯率、天氣。59% 的人至少用過一次</td></tr>
+      <tr><td>利潤</td><td><b>+17–18%</b></td></tr>
+      <tr><td>行為改變</td><td>跨境交易 +20%；走正式口岸 +25%；買貨市場數 +7%；賣貨市場數 +11%；品項數 +8%；消費者價格 −6.6%</td></tr>
+      <tr><td>沒有改變的</td><td><b>索賄和貪腐程度沒有變化</b></td></tr>
+      <tr><td>規模</td><td>Sauti 自己的資料：Busia 約占肯亞、烏干達之間非正式農產貿易的四分之三；平台 139,000 多位使用者；肯亞使用者自述月利潤多 17%，約 29 美元</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <h3>對設計的五個推論</h3>
+  <ol>
+    <li><b>錢是從「換市場、換品項」賺到的。</b>利潤上升伴隨的是買賣市場數和品項數增加。所以「去哪賣」必須是一等功能。你們在 D8 講的泡泡地圖正好打在這個機制上，我把它從附加頁升成主流程的一個出口。</li>
+    <li><b>資訊沒有減少索賄。</b>別把反貪當賣點。口岸免稅規則（STR）我只做成一張知識卡，效果誠實標「未知」。</li>
+    <li><b>使用者是教育程度不高的女性小商販。</b>圖示優先、數字優先、Kiswahili、盡量不打字。你要的拍照辨識和九宮格數字直選都是為她們設計的。</li>
+    <li><b>Sauti 已經把「查價」做完了，而且是純文字。</b>再做一個查價工具沒有差異。我們的差異是把價格變成三個答案：這一批該收多少、對方開的價能不能接受、不接受還能去哪賣。再用成交價回流去補官方資料沒有的市場。</li>
+    <li><b>她們是商販，不只是農夫。</b>在邊境一邊買、到另一邊賣。所以買進和賣出兩個角色都要支援，肯亞先令（KES）和烏干達先令（UGX）要能互換。</li>
+  </ol>
+</section>
+
+<!-- ===================================================== 3 -->
+<section id="s3">
+  <h2><span class="n">3</span>主流程與畫面</h2>
+  <p>主幹完全照 D1 到 D5 的順序。虛線那一格是我插進去的議價步驟，不想用可以直接跳過，流程不受影響。</p>
+  <ol class="flow">
+    <li><span class="s">S1 · D1</span>選品項。九宮格數字直選，收藏釘在最前面，或按左軟鍵拍照</li>
+    <li><span class="s">S2 · D2</span>選地區。只在第一次問，之後記住，顯示在標題列</li>
+    <li><span class="s">S3 · D3</span>看兩個價：官方每公斤、商販回報。附日期、信心格、7 日走勢</li>
+    <li><span class="s">S4 · D4</span>直接打數字輸入數量，算出這批該是多少錢</li>
+    <li class="opt"><span class="s">S4b · 補充</span>打進對方開的價，看燈號、差額、建議還價、底線</li>
+    <li><span class="s">S5 · D5</span>「成交了嗎？多少？」存進帳本（D12），同時變成匿名資料點</li>
+  </ol>
+  <p style="margin-top:14px">在 S3 按左軟鍵開選單，通往其他頁：</p>
+  <ul class="branch">
+    <li>去哪賣：需求清單／泡泡地圖（D7、D8）</li>
+    <li>History 走勢（D9）</li>
+    <li>Season 低價月曆（D10）</li>
+    <li>Report 回報價格（D11）</li>
+    <li>My deals 我的帳本（D12）</li>
+    <li>Border &amp; FX 匯率與免稅卡（補充）</li>
+  </ul>
+
+  <h3>畫面草圖</h3>
+  <p>下面每個框都是真實的 240×320 像素，字體用 Cloud Phone 內建的 Roboto Condensed，標題列 40px、內文 16px 照官方設計指引。介面語言是實機會用的英文和 Kiswahili，價格是示意數字。</p>
+
+  <div class="screens">
+    <figure class="shot">
+      <div class="scr" role="img" aria-label="S1 選品項畫面：九宮格，每格有數字、圖示、品名">
+        <div class="scr-h"><span>Mizani</span><small>Busia KE</small></div>
+        <div class="scr-b">
+          <div class="mut">Press 1–9 · ★ pinned · * to pin</div>
+          <div class="g9">
+            <div class="c on"><b>1</b><s>★</s><i>🌽</i>Maize</div>
+            <div class="c"><b>2</b><s>★</s><i>🫘</i>Beans</div>
+            <div class="c"><b>3</b><i>🍅</i>Tomato</div>
+            <div class="c"><b>4</b><i>🧅</i>Onion</div>
+            <div class="c"><b>5</b><i>🍌</i>Matooke</div>
+            <div class="c"><b>6</b><i>🥔</i>Potato</div>
+            <div class="c"><b>7</b><i>🌾</i>Rice</div>
+            <div class="c"><b>8</b><i>🥬</i>Cabbage</div>
+            <div class="c"><b>9</b><i>🐟</i>Omena</div>
+          </div>
+          <div class="mut">◀ ▶ more crops</div>
+        </div>
+        <div class="scr-k"><span>Photo</span><span>OK</span><span>Exit</span></div>
+      </div>
+      <figcaption><b>S1 選品項（D1）。</b>九宮格對應數字鍵，一鍵到位。收藏就是「釘到最前面」，不另開清單，數字不會打架。</figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="scr" role="img" aria-label="拍照辨識結果：三個候選品項與信心百分比">
+        <div class="scr-h"><span>Is this…?</span></div>
+        <div class="scr-b">
+          <div class="thumb">your photo</div>
+          <div class="opt3">
+            <div class="on"><span>1 🍅 Tomato</span><span>86%</span></div>
+            <div><span>2 🌶 Pepper</span><span>9%</span></div>
+            <div><span>3 🧅 Onion</span><span>3%</span></div>
+          </div>
+          <div class="hr"></div>
+          <div class="mut">0 None of these → pick from grid</div>
+        </div>
+        <div class="scr-k"><span>Retake</span><span>OK</span><span>Back</span></div>
+      </div>
+      <figcaption><b>拍照辨識（你的要求）。</b>回三個候選，按 1、2、3 確認。信心低或機型不支援上傳，就直接回九宮格。細節在 §6。</figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="scr" role="img" aria-label="S3 價格畫面：官方價 52、商販回報價 55、七日走勢、數量輸入">
+        <div class="scr-h"><span>🌽 Maize</span><small>Busia KE · Grade 1</small></div>
+        <div class="scr-b">
+          <div class="r"><span>Official</span><span class="big">KSh 52<span class="mut"> /kg</span></span></div>
+          <div class="mut" style="text-align:right">KAMIS · 18 Sep</div>
+          <div class="r"><span>Traders</span><span class="big">KSh 55<span class="mut"> /kg</span></span></div>
+          <div class="mut" style="text-align:right"><span class="cf" aria-label="confidence 2 of 3"><i></i><i></i><i class="off"></i></span>7 traders · 2 days ago</div>
+          <div class="hr"></div>
+          <div class="r"><span class="mut">7 days</span><span class="up">▲ +4%</span></div>
+          <div class="r"><span class="mut">≈ UGX 1,480 /kg</span><span class="mut"># switch</span></div>
+          <div class="hr"></div>
+          <div class="r"><span>Qty (kg)</span><span class="inp">180</span></div>
+        </div>
+        <div class="scr-k"><span>Menu</span><span>Calc</span><span>Back</span></div>
+      </div>
+      <figcaption><b>S3 兩個價（D3、D14）。</b>官方價在上、永遠帶日期；回報價在下、帶信心格。進這頁後直接打數字就是數量，不用先移到輸入框。</figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="scr" role="img" aria-label="S4 算錢與議價：總價 9900，對方出價 8500，紅燈，建議還價 10100">
+        <div class="scr-h"><span>Sell 180 kg</span><small>2 bags × 90 kg</small></div>
+        <div class="scr-b">
+          <div class="r"><span class="mut">180 × 55</span><span class="big">KSh 9,900</span></div>
+          <div class="r"><span class="mut">Fair range</span><span>9,540 – 10,260</span></div>
+          <div class="hr"></div>
+          <div class="r"><span>Their offer</span><span class="inp">8,500</span></div>
+          <div class="vd bad">LOW · you lose 1,400 (−14%)</div>
+          <div class="r"><span>Ask</span><b>10,100</b></div>
+          <div class="r"><span class="mut">Your floor (cost)</span><span>9,000</span></div>
+          <div class="r"><span class="mut">Or: Bungoma</span><span class="up">net +360</span></div>
+        </div>
+        <div class="scr-k"><span>Show card</span><span>Deal</span><span>Back</span></div>
+      </div>
+      <figcaption><b>S4 算錢＋議價（D4＋補充）。</b>對方每喊一次價就重打一次，燈號、整批差額、建議還價跟著變。最後一行是「不賣你，我還能去哪」，數字來自需求看板。</figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="scr" role="img" aria-label="給對方看的參考價卡：玉米 Busia 每公斤 52 先令">
+        <div class="scr-h"><span>Market price</span></div>
+        <div class="scr-b flush">
+          <div class="card">
+            <div><b>MAIZE · BUSIA</b></div>
+            <div class="p">KSh 52<span style="font-size:16px"> /kg</span></div>
+            <div><b>90 kg bag = KSh 4,680</b></div>
+            <div class="s">KAMIS · Ministry of Agriculture<br>18 Sep 2026</div>
+            <div class="s">Traders report KSh 55 (7)</div>
+          </div>
+        </div>
+        <div class="scr-k"><span></span><span></span><span>Back</span></div>
+      </div>
+      <figcaption><b>Show card（補充）。</b>把手機轉過去給對方看。白底大字、有來源有日期，讓手機當第三方證人，比自己嘴上講有力。</figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="scr" role="img" aria-label="S5 成交回報：成交價 9700，找零 300">
+        <div class="scr-h"><span>Deal done?</span></div>
+        <div class="scr-b">
+          <div class="r"><span>Final (KSh)</span><span class="inp">9,700</span></div>
+          <div class="vd good">53.9 /kg · in fair range</div>
+          <div class="hr"></div>
+          <div class="r"><span class="mut">Buyer pays</span><span>10,000</span></div>
+          <div class="r"><span class="mut">Change</span><b>KSh 300</b></div>
+          <div class="hr"></div>
+          <div class="mut">Saved to My deals. Your price helps traders in Busia — no name shown.</div>
+          <div class="mut">Photo of goods = more trust ★</div>
+        </div>
+        <div class="scr-k"><span>Photo</span><span>Save</span><span>No deal</span></div>
+      </div>
+      <figcaption><b>S5 成交回報（D5、D12、D13）。</b>價格預填最後一次出價，按一下就存。存的是他自己的帳，順便變成匿名資料點。「No deal」也記：沒成交的出價一樣是價格訊號。</figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="scr" role="img" aria-label="需求泡泡地圖：Busia 在邊境線上，肯亞側 Bungoma、Kisumu 等市場有帶編號的泡泡">
+        <div class="scr-h"><span>Who wants maize?</span></div>
+        <div class="scr-b flush">
+          <svg viewBox="0 0 240 200" width="240" height="200" aria-hidden="true">
+            <rect x="0" y="0" width="240" height="200" fill="#0B130F"/>
+            <line x1="112" y1="0" x2="112" y2="200" stroke="#5E7A68" stroke-width="1" stroke-dasharray="3 4"/>
+            <text x="6" y="12" fill="#8FAE98" font-size="9">UGANDA</text>
+            <text x="234" y="12" fill="#8FAE98" font-size="9" text-anchor="end">KENYA</text>
+            <polyline points="22,152 52,140 78,124 112,128 150,84 204,48" fill="none" stroke="#2C4436" stroke-width="2"/>
+            <polyline points="112,128 176,124 156,176" fill="none" stroke="#2C4436" stroke-width="2"/>
+            <polyline points="78,124 96,94 86,50" fill="none" stroke="#2C4436" stroke-width="2"/>
+            <circle cx="52" cy="140" r="2.5" fill="#5E7A68"/><circle cx="78" cy="124" r="2.5" fill="#5E7A68"/><circle cx="96" cy="94" r="2.5" fill="#5E7A68"/>
+            <circle cx="22" cy="152" r="16" fill="#33463B"/><text x="22" y="156" fill="#E2F3E4" font-size="12" font-weight="700" text-anchor="middle">6</text>
+            <text x="6" y="182" fill="#8FAE98" font-size="9">Kampala 52</text>
+            <circle cx="86" cy="50" r="10" fill="#3B6B50"/><text x="86" y="54" fill="#E2F3E4" font-size="11" font-weight="700" text-anchor="middle">5</text>
+            <text x="86" y="33" fill="#8FAE98" font-size="9" text-anchor="middle">Mbale 56</text>
+            <circle cx="204" cy="48" r="13" fill="#3B6B50"/><text x="204" y="52" fill="#E2F3E4" font-size="11" font-weight="700" text-anchor="middle">4</text>
+            <text x="204" y="29" fill="#8FAE98" font-size="9" text-anchor="middle">Eldoret 57</text>
+            <circle cx="176" cy="124" r="11" fill="#2E9E62"/><text x="176" y="128" fill="#04140B" font-size="11" font-weight="700" text-anchor="middle">3</text>
+            <text x="176" y="146" fill="#8FAE98" font-size="9" text-anchor="middle">Kakamega 58</text>
+            <circle cx="156" cy="176" r="19" fill="#2E9E62"/><text x="156" y="181" fill="#04140B" font-size="13" font-weight="700" text-anchor="middle">2</text>
+            <text x="180" y="188" fill="#8FAE98" font-size="9">Kisumu 63</text>
+            <circle cx="150" cy="84" r="15" fill="#2E9E62"/><circle cx="150" cy="84" r="18.5" fill="none" stroke="#FFD23F" stroke-width="2"/>
+            <text x="150" y="89" fill="#04140B" font-size="13" font-weight="700" text-anchor="middle">1</text>
+            <text x="150" y="60" fill="#FFD23F" font-size="10" font-weight="700" text-anchor="middle">Bungoma 60</text>
+            <rect x="107" y="123" width="10" height="10" fill="#FFD23F"/>
+            <text x="104" y="162" fill="#FFD23F" font-size="9" text-anchor="end">You · Busia</text>
+          </svg>
+          <div style="padding:4px 8px 0">
+            <div class="r"><b>1 Bungoma</b><span>60 /kg · 500 kg</span></div>
+            <div class="r"><span class="mut">transport −3</span><span class="up">net 57 /kg</span></div>
+          </div>
+        </div>
+        <div class="scr-k"><span>List</span><span>Open</span><span>Back</span></div>
+      </div>
+      <figcaption><b>泡泡地圖（D8）。</b>不是可以拖的地圖，是走廊示意圖。泡泡大小是需求量，編號是「扣掉路費後的淨價」排名。方向鍵在泡泡之間跳，也可以直接按泡泡上的數字。細節在 §5。</figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="scr" role="img" aria-label="Season 低價月曆：十二個月的價格指數長條，八九月最低，四到六月最高">
+        <div class="scr-h"><span>🌽 Season</span><small>Busia KE</small></div>
+        <div class="scr-b">
+          <div class="bars" aria-hidden="true">
+            <span style="height:62%"></span><span style="height:70%"></span><span class="hi" style="height:80%"></span><span class="hi" style="height:94%"></span><span class="hi" style="height:100%"></span><span class="hi" style="height:90%"></span><span style="height:58%"></span><span class="lo" style="height:30%"></span><span class="lo now" style="height:22%"></span><span class="lo" style="height:26%"></span><span style="height:40%"></span><span style="height:52%"></span>
+          </div>
+          <div class="mths"><span>J</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span><span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span></div>
+          <div class="hr"></div>
+          <div class="r"><span class="mut">Low</span><span>Aug – Oct (harvest)</span></div>
+          <div class="r"><span class="mut">High</span><span>Mar – Jun</span></div>
+          <div class="r"><span class="mut">Now</span><span class="dn">14% below year avg</span></div>
+          <div class="mut">Store 3 months: about +15%, minus 3% loss</div>
+        </div>
+        <div class="scr-k"><span>History</span><span></span><span>Back</span></div>
+      </div>
+      <figcaption><b>Season 低價月曆（D10）。</b>就是訂機票網站的低價月曆：十二個月各一根，綠的是便宜月、黃的是貴的月。最後一行把「現在賣還是放著」換算成錢。</figcaption>
+    </figure>
+  </div>
+
+  <h3>按鍵約定</h3>
+  <div class="scroll">
+  <table class="w760">
+    <thead><tr><th>按鍵</th><th>事件</th><th>行為</th></tr></thead>
+    <tbody>
+      <tr><td>數字 1–9</td><td class="mono">keydown · event.key</td><td>九宮格直選；在地圖上跳到該編號的泡泡；在價格頁和議價頁直接當輸入</td></tr>
+      <tr><td>OK</td><td class="mono">Enter</td><td>確認、下一步</td></tr>
+      <tr><td>左軟鍵 LSK</td><td class="mono">keydown · Escape</td><td>當頁主要動作或選單（Photo、Menu、Show card）。官方文件：LSK 就是 <code>Escape</code></td></tr>
+      <tr><td>右軟鍵 RSK</td><td class="mono">window "back" 事件<br>F12（官方 demo 慣例）</td><td>輸入欄有數字時是「清除一位」，否則上一頁。實機走 <code>back</code> 事件，預設行為是 <code>history.back()</code>；官方 Meichu demo 和模擬器用 <code>F12</code> 代表右軟鍵，兩種都接。畫面堆疊掛在 History API 上，在首頁不攔截，讓平台關掉 App</td></tr>
+      <tr><td><code>*</code></td><td class="mono">event.key "*"</td><td>釘選／取消收藏</td></tr>
+      <tr><td><code>#</code></td><td class="mono">event.key "#"</td><td>切換顯示幣別。<code>#</code> 和 <code>3</code> 共用 keyCode，只能用 <code>event.key</code> 判斷 <span class="tag t-ver">待驗證</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ===================================================== 4 -->
+<section id="s4">
+  <h2><span class="n">4</span>算錢與議價引擎</h2>
+  <p>這一節回應你說的「在實際算錢或討價還價的時候有幫助」。整個引擎是一包沒有副作用的純函式（<code>packages/money</code>），全部用整數的最小幣值計算，前端和後端共用同一份程式，所以手機上算出來的數字和伺服器驗證的數字一定相同。這裡面不放任何 AI：錢的計算必須每次都一樣、能寫測試、能解釋。</p>
+
+  <div class="two">
+    <div>
+      <h3>在地單位 <span class="tag t-add">補充</span></h3>
+      <p>官方價是每公斤，但市場上沒人用公斤講價。玉米論 90 公斤的袋、約 2 公斤的罐（肯亞叫 gorogoro）、約 17 公斤的桶（debe）；番茄論木箱；matooke 論串。目錄裡每個品項帶一張單位換算表，S4 標題列那行「2 bags × 90 kg」就是它算的。換算值要田調校準 <span class="tag t-ver">待驗證</span>。</p>
+      <h3>雙幣與換匯損失 <span class="tag t-add">補充</span></h3>
+      <p>所有金額都能按 <code>#</code> 在 KES 和 UGX 之間切換，匯率用中間價。使用者可以打進邊境換匯攤報給她的匯率，畫面直接顯示「這個匯率讓你少拿 UGX 12,000（−2.1%）」。換匯本身也是一場議價，J-PAL 的介入裡就包含匯率資訊。</p>
+      <h3>買、賣兩種角色 <span class="tag t-add">補充</span></h3>
+      <p>賣的時候對方出價越高越綠，買的時候越低越綠。同一套公式，方向相反，進 S4 時用左右鍵切換 Sell／Buy。</p>
+    </div>
+    <div>
+      <h3>公平區間 <span class="tag t-disc">D3 D14</span></h3>
+      <p>以官方價為錨，回報價只能在錨附近修正，這是照 D14「以 Government 為主」。</p>
+<pre><code>回報夠（信心 ≥ 2 格）：
+  區間 = 回報價 P25–P75，
+         夾在官方價 ±20% 以內
+回報不夠：
+  區間 = 官方價 × (1 ± v)
+  v = 近 30 天波動，最小 5%、最大 15%
+品質：乘上該品項的等級係數
+      （例 Grade 2 = 0.90）</code></pre>
+      <h3>成本底線 <span class="tag t-add">補充</span></h3>
+<pre><code>底線/kg = (進貨 + 路費 + 市場規費
+           + 口岸費用)
+          ÷ (數量 × (1 − 損耗率))</code></pre>
+      <p>底線高過區間上緣時，不叫她硬撐，直接提示「這個市場回不了本，看看別的市場」，連到 §5。</p>
+    </div>
+  </div>
+
+  <h3>對方每喊一次價，畫面回答四件事 <span class="tag t-add">補充</span></h3>
+  <div class="scroll">
+  <table class="w760">
+    <thead><tr><th>回答</th><th>規則（以賣方為例）</th><th>畫面</th></tr></thead>
+    <tbody>
+      <tr><td>能不能接受</td><td>出價 ≥ 參考價：綠。落在公平區間下半：黃。低於區間：紅</td><td>整條色塊，字大</td></tr>
+      <tr><td>差多少錢</td><td>（出價 − 參考價）× 數量，講整批的錢，不講百分比</td><td>「you lose 1,400」</td></tr>
+      <tr><td>該還多少</td><td>對等讓步：開價設在公平區間上緣再高一點；對方每從亂喊價往市價靠近一步，我就從開價往市價退同樣的比例，兩邊在市價碰頭。對方亂喊價就一步不退，永遠不低於成本底線。結果取成講得出口的整數。這條是實作時改的：原本的公式在單元測試裡被抓到「對方加價、我的要價反而上升」</td><td>「Ask 4,950」</td></tr>
+      <tr><td>不賣還能去哪</td><td>從需求看板和其他市場找淨價最高的替代方案：對方價 − 路費 − 口岸費用 − 損耗</td><td>「Or: Bungoma net +360」</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>第四行是整個設計的關節：你們的需求地圖（D7、D8）不只是找買家的地方，它同時是議價桌上最硬的籌碼。談判裡最有力的一句話永遠是「別人出得比你高」，而這句話現在有數字撐著。</p>
+  <p>另外兩個小東西。<b>一句話術：</b>還價旁邊給一句照模板填數字的 Kiswahili，例如「Bei ya soko leo ni shilingi 55 kwa kilo.」（今天市價每公斤 55 先令），模板要請母語者校過 <span class="tag t-ver">待驗證</span>。<b>找零：</b>成交後輸入對方給的鈔票面額，算出要找多少，見 S5。</p>
+</section>
+
+<!-- ===================================================== 5 -->
+<section id="s5">
+  <h2><span class="n">5</span>需求看板與泡泡地圖</h2>
+  <h3>需求貼文 <span class="tag t-disc">D7</span></h3>
+  <p>照 D6 的結論，不碰物流和金流，只做撮合。買家貼一則需求，賣家自己決定要不要送過去。</p>
+  <div class="scroll">
+  <table class="w760">
+    <thead><tr><th>欄位</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td>品項、等級</td><td>沿用目錄</td></tr>
+      <tr><td>數量、單位</td><td>例 500 kg 或 6 袋</td></tr>
+      <tr><td>願意收的價格、幣別</td><td>每公斤或每單位，後端一律換成每公斤存</td></tr>
+      <tr><td>交貨市場</td><td><b>只到市場層級，不收住址。</b>這裡治安不好，公開「某人在某地址等著收 500 公斤貨」等於幫搶匪指路 <span class="tag t-add">補充</span></td></tr>
+      <tr><td>有效期</td><td>1、3、7 天，到期自動下架</td></tr>
+      <tr><td>聯絡方式</td><td>公開號碼，或只走簡訊中繼（見下）</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>買家多半是磨坊、學校、餐館、批發商，手上有智慧型手機。所以貼需求這一頁同時做成響應式網頁，同一份前端在智慧機上就是 PWA（§9）。按鍵機上也能貼，只是欄位一頁一個。</p>
+  <p>每一則需求的出價也會進價格引擎，當成權重較低的「買方出價觀測值」。這就是錄音裡講的「順便整理出市場價格」。</p>
+
+  <h3>排序看淨價，不看標價 <span class="tag t-disc">D8</span></h3>
+  <p>錄音 93 說的是「看他的路費，或是看他的價錢哪一個比較好」，兩件事合起來就是淨價：</p>
+<pre><code>淨價/kg = 對方出價 − 路費/kg(我的地區 → 對方市場) − 口岸費用/kg − 出價 × 途中損耗率</code></pre>
+  <p>路費先用 <code>routes</code> 表的估計值（市場兩兩之間每袋多少錢），使用者可以改成自己實際付的。成交回報時順手問一句「路費付了多少」，路費表就會越來越準 <span class="tag t-add">補充</span>。</p>
+
+  <h3>泡泡地圖在按鍵機上怎麼操作 <span class="tag t-disc">D8</span> <span class="tag t-add">補充</span></h3>
+  <ul>
+    <li><b>走廊示意圖，不是可拖曳地圖。</b>Busia 走廊大約十二個市場節點：烏干達側 Kampala、Jinja、Iganga、Tororo、Mbale，肯亞側 Bungoma、Kakamega、Kisumu、Eldoret，Busia 壓在邊境線上。節點在螢幕上的位置預先畫好，存在 <code>markets.map_x / map_y</code>。</li>
+    <li><b>泡泡編碼。</b>大小是需求量（半徑正比於數量的平方根），編號是淨價排名，顏色分「比在本地賣好」和「比較差」兩種。</li>
+    <li><b>方向鍵在泡泡之間跳。</b>每個節點預先定好上下左右的鄰居，不做即時幾何運算，所以行為完全可預期、可測試。也可以直接按泡泡上的數字。下方兩行永遠顯示目前泡泡的出價、數量、淨價。</li>
+    <li><b>為什麼用 SVG。</b>Cloud Phone 傳給手機的是向量繪圖指令，不是像素。圓、線、字這種向量圖形傳起來便宜，地圖圖磚是點陣圖，又貴又糊。整張圖一次畫完，不做冒出動畫：官方文件說畫面更新最快每秒 20 格，而且每一格都走使用者的流量 <span class="tag t-ver">實機量流量</span>。</li>
+    <li><b>128×160 的機型</b>放不下地圖，自動改成依淨價排序的清單。</li>
+  </ul>
+
+  <h3>雙方怎麼聯絡 <span class="tag t-add">補充</span></h3>
+  <p>錄音沒談到這一段，但沒有它撮合就斷了。限制是：<code>tel:</code> 連結要 Cloud Phone client 3.1.2 以上，測試機 itel R60+ 是 2.5.0，點不了。</p>
+  <ol>
+    <li>先用 <code>navigator.hasFeature('TelScheme')</code> 偵測，支援就給撥號連結。</li>
+    <li>不支援：大字顯示號碼，加一個「SMS me this contact」。伺服器把買家號碼和需求摘要用簡訊寄到賣家手機，她從簡訊收件匣就能直接回撥。</li>
+    <li>買家選「不公開號碼」時走中繼：賣家按「我有興趣」，買家收到一封帶賣家號碼的簡訊，由買家回撥。</li>
+  </ol>
+
+  <h3>假需求怎麼辦 <span class="tag t-add">補充</span></h3>
+  <p>回報價格可以匿名（§7），但貼需求不行：假需求會讓人白跑一趟，代價是真的路費。所以貼需求要先用簡訊驗證碼綁定電話號碼，反正聯絡本來就需要號碼。貼文到期後兩邊各問一句「有成交嗎」，算出這個買家的履約率，顯示在貼文旁邊。履約率太低的貼文排序往後。</p>
+</section>
+
+<!-- ===================================================== 6 -->
+<section id="s6">
+  <h2><span class="n">6</span>拍照辨識</h2>
+  <p>你要的「不一定要手動輸入，拍照就知道是什麼」。先講限制，因為它決定了設計：</p>
+  <ul>
+    <li>測試機 itel R60+ 的相機是 0.08MP，大約 320×240 像素。分得出番茄和洋蔥，分不出等級。所以拍照只辨識<b>品項</b>，等級用三張示意圖手選。</li>
+    <li>Cloud Phone 的上傳是 <code>&lt;input type="file" accept="image/*"&gt;</code>，會開一個原生的全螢幕檔案挑選器（Phone／MemoryCard）。能不能直接開相機要看機型；不能的話，使用者得先用相機 App 拍好再回來選 <span class="tag t-ver">待驗證</span>。模擬器測不了上傳，只能在實機上試。</li>
+    <li>結論：拍照是一條捷徑，永遠不是唯一的路。九宮格一直都在。</li>
+  </ul>
+  <ol class="steps">
+    <li><b>偵測</b><code>navigator.hasFeature('ImageUpload')</code> 為真，S1 的左軟鍵才顯示 Photo；否則顯示 Search。</li>
+    <li><b>選圖與縮圖</b>widget 拿到檔案後畫到 canvas，縮到長邊 512px 以內、JPEG 品質 0.7，拿掉 EXIF。這一步跑在 CloudMosa 的雲端瀏覽器裡，不吃手機效能。</li>
+    <li><b>送辨識</b><code>POST /v1/recognize</code>。Worker 先查每台裝置每日上限，再算影像雜湊查快取，同一張圖不付第二次錢。</li>
+    <li><b>視覺模型，輸出鎖在目錄裡</b>提示詞帶整份品項目錄（ID、英文名、Kiswahili 名、外觀提示），用 tool use 的 JSON schema 把答案限制成目錄 ID 的 enum 加上 <code>unknown</code>，回前三名和信心值。模型藏在 <code>VisionProvider</code> 介面後面，起步用 Claude Haiku 4.5（<code>claude-haiku-4-5-20251001</code>），便宜、快、看得懂圖；之後可以換。</li>
+    <li><b>人來確認</b>畫面列三個候選，按 1、2、3 確認，按 0 回九宮格。第一名信心低於門檻，或回 <code>unknown</code>，就直接落到九宮格，游標停在最可能的那一類。</li>
+    <li><b>學習迴圈</b>記下「模型猜的」和「使用者最後選的」。使用者同意才把縮圖存進 R2。累積到幾千張之後訓練一個小型分類器接手，視覺模型退成後備，單次成本降到接近零。</li>
+  </ol>
+  <p><b>成交照片（D13）走同一條路。</b>S5 的左軟鍵可以補一張貨的照片，<code>kind=proof</code>。模型只檢查一件事：照片裡是不是他聲稱的品項。通過的回報權重乘 1.5。它擋不住有心造假的人，但能拉高大量灌水的成本，所以是加分項，不是門檻。驗完只留雜湊，不留照片。</p>
+</section>
+
+<!-- ===================================================== 7 -->
+<section id="s7">
+  <h2><span class="n">7</span>回報可信度：把未決的爭論定案</h2>
+  <p>錄音最後一分半在爭這件事，沒有結論。我整理一下各方說的：以官方價為主（D14）；成交後拍照（D13）；信用分（D15）；參考 App 的 AI confidence（D15）；身分認證難做，而且認證了還是能亂報（D15）；怕一筆假資料就把價格搞爛（D15）。</p>
+  <p>我的建議是五道防線，全部不需要身分認證，和你們的直覺一致：</p>
+  <ol class="steps">
+    <li><b>官方價錨定 <span class="tag t-disc">D14</span></b>官方價永遠顯示在最上面。回報低於官方價一半或高於兩倍，直接拒收，「可可一口 1000」死在這一關。偏離超過 ±20% 的先隔離、不計入（以官方價或現有回報中位數為中心，兩者取寬），48 小時內要再有 2 位獨立回報者落在它 ±10% 以內才放行。真的行情劇變會有人跟著報，過得了；一個人亂報過不了。</li>
+    <li><b>用中位數，不用平均 <span class="tag t-add">補充</span></b>顯示的是加權中位數和 P25–P75。中位數要超過一半的權重是假的才會被帶走，「一筆就搞爛」在數學上做不到。</li>
+    <li><b>一人一票，會過期 <span class="tag t-add">補充</span></b>同一台裝置對同一個「品項＋市場」，24 小時內只算最新一筆。權重每 3 天減半。7 天內不到 3 位獨立回報者就不顯示回報價，只顯示「回報不足，成為第一個」。</li>
+    <li><b>信用分看行為，不看身分 <span class="tag t-disc">D15</span></b>新裝置權重 0.3，上限 1.0。每一筆落在最終 P10–P90 以內的回報加 0.05；被拒收的扣 0.15；先被隔離、後來證明是對的加 0.1，獎勵最早報出真實變化的人。走完 S4→S5 成交流程產生的回報乘 1.2；照片驗過的乘 1.5（D13）。使用者看到的只是自己的星星數。</li>
+    <li><b>信心格 <span class="tag t-disc">D15</span></b>這就是你們看到的「AI confidence」的對應物，但它是統計算出來的，不是模型猜的：3–4 人或最新一筆超過 4 天，一格；5–9 人，兩格；10 人以上且離散度（IQR÷中位數）在 10% 以內，三格。</li>
+  </ol>
+  <h3>把錄音裡的擔心代進去算一次</h3>
+  <div class="scroll">
+  <table class="w760">
+    <thead><tr><th>進來的回報（KSh/kg）</th><th>來源</th><th>處理</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">54 · 55 · 55 · 56 · 57</td><td>5 位不同商販，走成交流程</td><td>計入</td></tr>
+      <tr><td class="mono">20 · 20 · 20 · 20</td><td>同一支手機連報 4 次，想把價格拉低</td><td>低於官方價 52 的一半，拒收。就算沒拒收，一人一票也只算 1 筆</td></tr>
+      <tr><td class="mono">1000</td><td>「可可一口 1000」</td><td>高於官方價 2 倍，拒收</td></tr>
+      <tr><td class="mono">41</td><td>1 位新使用者</td><td>偏離 21%，隔離；沒有人跟進就永遠不計入</td></tr>
+      <tr><td><b>畫面顯示</b></td><td></td><td><b>中位數 55，區間 55–56，信心 ▮▮▯</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>買方想把價格報低、賣方想報高，兩邊的偏誤方向相反。每筆回報都帶著 buy／sell，聚合時兩邊各自取中位數再合併，任何一邊人多都不會把價格拖走 <span class="tag t-add">補充</span>。</p>
+  <p>匿名 ID 的基礎：Cloud Phone 的 localStorage 存在 CloudMosa 伺服器上，用裝置專屬金鑰加密，使用者按 Clear Data 才會清掉。換一個新 ID 就得從權重 0.3 重新養起，再加上依 <code>X-Forwarded-For</code> 來源位址做限流，大量開分身的成本不低。</p>
+</section>
+
+<!-- ===================================================== 8 -->
+<section id="s8">
+  <h2><span class="n">8</span>系統架構總圖</h2>
+  <p>先講一個和一般網頁 App 不一樣的前提：Cloud Phone 的瀏覽器跑在 CloudMosa 的機房，手機只送按鍵、只收繪圖指令。所以我們的「前端」其實在雲端執行，它和我們 API 之間的網路很快；真正又慢又貴的是手機到機房這一段。整個架構都圍繞這件事：每個畫面只打一次 API，畫面能不動就不動。</p>
+  <figure class="fig">
+    <div class="scroll">
+    <svg class="dg" viewBox="0 0 1040 610" role="img" aria-label="系統架構：按鍵機只和 CloudMosa 雲端瀏覽器交換按鍵與繪圖指令；瀏覽器裡的 widget 經 HTTPS 呼叫 Cloudflare Workers 的 Edge API；API 讀寫 D1、KV、R2、Queues；排程抓官方價與匯率並算出價格快照。">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk" d="M0 0L10 5L0 10z"/></marker>
+        <marker id="arh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="mk-hot" d="M0 0L10 5L0 10z"/></marker>
+      </defs>
+
+      <!-- top externals -->
+      <rect class="bx2" x="544" y="20" width="108" height="50" rx="4"/>
+      <text class="t1" x="598" y="41" text-anchor="middle">視覺模型 API</text>
+      <text class="t3" x="598" y="58" text-anchor="middle">只能回目錄 ID</text>
+      <rect class="bx2" x="660" y="20" width="112" height="50" rx="4"/>
+      <text class="t1" x="716" y="41" text-anchor="middle">SMS 閘道</text>
+      <text class="t3" x="716" y="58" text-anchor="middle">Africa's Talking</text>
+      <line class="ln" x1="598" y1="110" x2="598" y2="72" marker-end="url(#ar)"/>
+      <text class="t3" x="590" y="95" text-anchor="end">照片 → 前三名</text>
+      <line class="ln" x1="716" y1="110" x2="716" y2="72" marker-end="url(#ar)"/>
+      <text class="t3" x="724" y="95">價格卡 · 聯絡方式</text>
+
+      <!-- phone -->
+      <rect class="bx" x="20" y="140" width="150" height="130" rx="6"/>
+      <text class="t1" x="95" y="172" text-anchor="middle">按鍵機</text>
+      <text class="t2" x="95" y="194" text-anchor="middle">Cloud Phone client</text>
+      <text class="t3" x="95" y="216" text-anchor="middle">QVGA 240×320</text>
+      <text class="t3" x="95" y="234" text-anchor="middle">QQVGA 128×160</text>
+
+      <!-- cloud browser -->
+      <rect class="bx" x="250" y="110" width="220" height="190" rx="6"/>
+      <text class="t1" x="360" y="134" text-anchor="middle">CloudMosa 雲端瀏覽器</text>
+      <rect class="bx2" x="265" y="148" width="190" height="62" rx="4"/>
+      <text class="t1" x="360" y="173" text-anchor="middle">Mizani widget</text>
+      <text class="t3" x="360" y="193" text-anchor="middle">React · TS · 議價引擎在這裡算</text>
+      <rect class="bx2" x="265" y="222" width="190" height="62" rx="4"/>
+      <text class="t1" x="360" y="247" text-anchor="middle">localStorage · IndexedDB</text>
+      <text class="t3" x="360" y="267" text-anchor="middle">匿名 ID · 收藏 · 上次價格</text>
+
+      <!-- edge api -->
+      <rect class="bx" x="560" y="110" width="200" height="190" rx="6"/>
+      <text class="t1" x="660" y="134" text-anchor="middle">Edge API · Workers + Hono</text>
+      <text class="tm" x="580" y="160">/prices     /trends</text>
+      <text class="tm" x="580" y="180">/deals      /reports</text>
+      <text class="tm" x="580" y="200">/demands    /map</text>
+      <text class="tm" x="580" y="220">/recognize  /photos</text>
+      <text class="tm" x="580" y="240">/sms        /phone</text>
+      <text class="t3" x="660" y="276" text-anchor="middle">zod 驗證 · 裝置權杖 · 限流</text>
+
+      <!-- data -->
+      <rect class="bx" x="850" y="110" width="170" height="190" rx="6"/>
+      <text class="t1" x="935" y="134" text-anchor="middle">資料層</text>
+      <text class="tm" x="866" y="164">D1</text><text class="t2" x="900" y="164">帳本 · 回報 · 需求</text>
+      <text class="tm" x="866" y="190">KV</text><text class="t2" x="900" y="190">價格快照 · 目錄</text>
+      <text class="tm" x="866" y="216">R2</text><text class="t2" x="900" y="216">照片</text>
+      <text class="tm" x="866" y="242">Queues</text><text class="t2" x="916" y="242">回報 · 簡訊</text>
+      <text class="t3" x="935" y="280" text-anchor="middle">全部在 Cloudflare 邊緣</text>
+
+      <!-- hot path -->
+      <line class="hot" x1="170" y1="185" x2="248" y2="185" marker-end="url(#arh)"/>
+      <text class="th" x="210" y="177" text-anchor="middle">按鍵事件</text>
+      <line class="hot" x1="250" y1="225" x2="172" y2="225" marker-end="url(#arh)"/>
+      <text class="th" x="210" y="244" text-anchor="middle">向量繪圖指令</text>
+      <line class="hot" x1="470" y1="205" x2="558" y2="205" marker-end="url(#arh)"/>
+      <text class="th" x="515" y="197" text-anchor="middle">HTTPS JSON</text>
+      <text class="t3" x="515" y="223" text-anchor="middle">每個畫面 1 次</text>
+      <line class="ln" x1="760" y1="175" x2="848" y2="175" marker-end="url(#ar)"/>
+      <text class="t3" x="804" y="167" text-anchor="middle">讀快照</text>
+      <line class="ln" x1="760" y1="235" x2="848" y2="235" marker-end="url(#ar)"/>
+      <text class="t3" x="804" y="227" text-anchor="middle">寫入 → 佇列</text>
+
+      <!-- row B -->
+      <rect class="bx" x="20" y="380" width="150" height="70" rx="6"/>
+      <text class="t1" x="95" y="409" text-anchor="middle">智慧機 PWA</text>
+      <text class="t3" x="95" y="429" text-anchor="middle">買家貼需求 · 同一本帳</text>
+      <rect class="bx" x="250" y="380" width="220" height="70" rx="6"/>
+      <text class="t1" x="360" y="409" text-anchor="middle">Cloudflare Pages</text>
+      <text class="t3" x="360" y="429" text-anchor="middle">widget 靜態檔 · 同一份碼就是 PWA</text>
+      <line class="ln" x1="360" y1="380" x2="360" y2="302" marker-end="url(#ar)"/>
+      <text class="t3" x="368" y="345">載入 widget</text>
+      <line class="ln" x1="170" y1="415" x2="248" y2="415" marker-end="url(#ar)"/>
+      <text class="t3" x="210" y="407" text-anchor="middle">同一份前端</text>
+
+      <rect class="bx" x="560" y="370" width="460" height="110" rx="6"/>
+      <text class="t1" x="790" y="392" text-anchor="middle">排程與佇列消費者 · Cron Triggers + Queue consumers</text>
+      <rect class="bx2" x="568" y="406" width="84" height="58" rx="4"/><text class="tm" x="610" y="431" text-anchor="middle">ingest</text><text class="t3" x="610" y="451" text-anchor="middle">官方價 · 匯率</text>
+      <rect class="bx2" x="658" y="406" width="84" height="58" rx="4"/><text class="tm" x="700" y="431" text-anchor="middle">normalize</text><text class="t3" x="700" y="451" text-anchor="middle">品項單位對齊</text>
+      <rect class="bx2" x="748" y="406" width="84" height="58" rx="4"/><text class="tm" x="790" y="431" text-anchor="middle">trust</text><text class="t3" x="790" y="451" text-anchor="middle">信用加權</text>
+      <rect class="bx2" x="838" y="406" width="84" height="58" rx="4"/><text class="tm" x="880" y="431" text-anchor="middle">aggregate</text><text class="t3" x="880" y="451" text-anchor="middle">中位數快照</text>
+      <rect class="bx2" x="928" y="406" width="84" height="58" rx="4"/><text class="tm" x="970" y="431" text-anchor="middle">season</text><text class="t3" x="970" y="451" text-anchor="middle">月指數</text>
+      <line class="ln" x1="880" y1="302" x2="880" y2="368" marker-end="url(#ar)"/>
+      <text class="t3" x="872" y="340" text-anchor="end">佇列工作</text>
+      <line class="ln" x1="990" y1="370" x2="990" y2="304" marker-end="url(#ar)"/>
+      <text class="t3" x="982" y="340" text-anchor="end">價格快照</text>
+
+      <!-- row C -->
+      <rect class="bx2" x="560" y="530" width="140" height="60" rx="4"/>
+      <text class="t1" x="630" y="555" text-anchor="middle">KAMIS（肯亞農業部）</text>
+      <text class="t3" x="630" y="574" text-anchor="middle">批發 · 零售 · 產地價 /kg</text>
+      <rect class="bx2" x="712" y="530" width="140" height="60" rx="4"/>
+      <text class="t1" x="782" y="555" text-anchor="middle">WFP · HDX</text>
+      <text class="t3" x="782" y="574" text-anchor="middle">肯烏月價 · 多年歷史</text>
+      <rect class="bx2" x="864" y="530" width="156" height="60" rx="4"/>
+      <text class="t1" x="942" y="555" text-anchor="middle">匯率來源</text>
+      <text class="t3" x="942" y="574" text-anchor="middle">KES ↔ UGX ↔ USD</text>
+      <line class="ln" x1="630" y1="530" x2="630" y2="482" marker-end="url(#ar)"/>
+      <line class="ln" x1="782" y1="530" x2="782" y2="482" marker-end="url(#ar)"/>
+      <line class="ln" x1="942" y1="530" x2="942" y2="482" marker-end="url(#ar)"/>
+      <text class="t3" x="790" y="512">每日／每週抓取</text>
+
+      <rect class="bx2" x="20" y="530" width="450" height="60" rx="4"/>
+      <text class="t1" x="245" y="555" text-anchor="middle">GitHub Actions</text>
+      <text class="t3" x="245" y="574" text-anchor="middle">型別檢查 → 引擎單元測試 → 按鍵 e2e → 預覽部署 → 正式</text>
+      <line class="ln" x1="360" y1="530" x2="360" y2="452" marker-end="url(#ar)"/>
+      <text class="t3" x="368" y="496">部署</text>
+    </svg>
+    </div>
+    <figcaption>綠色是使用者每按一次鍵會走的路。最左邊那一段（手機到 CloudMosa 機房）最慢也最貴，所以右邊的一切都設計成讓它少跑：一個畫面一次請求、讀的是算好的快照、寫入丟佇列就回。</figcaption>
+  </figure>
+  <h3>為什麼選這一組</h3>
+  <ul>
+    <li><b>Workers 放在邊緣。</b>官方文件列的 Cloud Phone 機房是新加坡和美國為主、南非和西班牙為輔。東非使用者的雲端瀏覽器會落在哪一座要實測；API 放 anycast 邊緣，不管落在哪座都打到最近的節點 <span class="tag t-ver">待驗證</span>。</li>
+    <li><b>讀寫分開。</b>讀價格只碰 KV 裡算好的快照，一次往返。寫入（回報、成交、照片）先進 Queue 再慢慢算信用和聚合，使用者不用等。</li>
+    <li><b>全部 serverless、用量計費。</b>學生團隊零維運，比賽期間幾乎不花錢。</li>
+    <li><b>同一份前端兩種身分。</b>按鍵機上是 Cloud Phone widget，智慧型手機上是可安裝的 PWA。題目說這是「第二支手機」，同一個人的第一支手機也能看同一本帳。</li>
+  </ul>
+</section>
+
+<!-- ===================================================== 9 -->
+<section id="s9">
+  <h2><span class="n">9</span>前端架構</h2>
+<pre><code>mizani/                          pnpm workspaces
+├─ apps/
+│  ├─ widget/                    React 18 + TypeScript + Vite
+│  │  ├─ core/
+│  │  │  ├─ keypad.ts            Escape→LSK、"back" 事件→RSK、數字、* #（只看 event.key）
+│  │  │  ├─ focus.ts             清單、九宮格（Z 字換列）、地圖（鄰居表）三種焦點模型
+│  │  │  ├─ router.ts            堆疊式，掛在 History 上，RSK 的預設 back 自然可用
+│  │  │  ├─ softkeys.tsx         底部軟鍵列，標籤跟著當頁動作走
+│  │  │  ├─ screen.ts            qvga / qqvga / square / landscape 四種尺寸的版面常數
+│  │  │  ├─ features.ts          navigator.hasFeature() 包裝；一般瀏覽器給合理預設
+│  │  │  ├─ api.ts               fetch 包裝：逾時、重試、Idempotency-Key、失敗回上次快取
+│  │  │  └─ storage.ts           localStorage：裝置 ID、地區、收藏、每個 (品項, 市場) 上次的回應
+│  │  └─ features/               一個資料夾對一項討論結論
+│  │     ├─ product/   D1        ├─ demand/    D7 D8（list · map · post）
+│  │     ├─ area/      D2        ├─ history/   D9
+│  │     ├─ price/     D3        ├─ season/    D10
+│  │     ├─ calc/      D4        ├─ report/    D11
+│  │     ├─ bargain/   補充       ├─ ledger/    D12
+│  │     ├─ close-deal/ D5       ├─ vision/    拍照
+│  │     └─ border/    補充       └─ settings/
+│  └─ api/                       Cloudflare Workers + Hono（§10）
+├─ packages/
+│  ├─ money/                     議價引擎：純函式、整數運算、前後端共用
+│  ├─ trust/                     §7 的聚合與信用分，也是純函式
+│  ├─ catalog/                   品項、單位換算、市場、路線的種子資料
+│  └─ i18n/                      en · sw，之後 lg
+├─ infra/                        wrangler 設定、D1 migrations
+└─ tests/e2e/                    無頭 Chrome，用真的 KeyboardEvent 驅動 240×320 畫面</code></pre>
+  <h3>四條前端規矩</h3>
+  <ol>
+    <li><b>一個畫面一次請求。</b><code>GET /v1/prices</code> 一次把官方價、回報價、信心、7 日走勢、匯率全帶回來，S3、S4、Show card 都用這一包。</li>
+    <li><b>畫面省著動。</b>不用 CSS 動畫和 transition，不放會轉的載入圖示（用靜態的「Loading…」），不設自動重新整理的計時器。圖示用內嵌 SVG，不用點陣圖。</li>
+    <li><b>能力先偵測再顯示。</b><code>ImageUpload</code>、<code>TelScheme</code>、<code>SmsScheme</code>、<code>Vibrate</code> 都先問 <code>navigator.hasFeature()</code>，沒有就連按鈕都不出現，不讓使用者按到沒反應的東西。</li>
+    <li><b>算錢在本地。</b>價格抓回來之後，數量、出價、還價全在 widget 裡算，打數字不發請求，反應是即時的。</li>
+  </ol>
+  <p><b>身分。</b>第一次開啟時呼叫 <code>POST /v1/devices</code> 拿一個簽過的匿名裝置權杖，存 localStorage。不用註冊就能用全部查價、算錢、回報功能。要貼需求、要收簡訊、或換手機想把帳本帶走，才用簡訊驗證碼綁定電話號碼。Cloud Phone 官方也建議重要資料要讓使用者登入並備份到帳號。</p>
+  <p><b>語言。</b>英文和 Kiswahili 起步，之後加 Luganda。字串保持短，數字和幣別用 <code>Intl.NumberFormat</code>。</p>
+</section>
+
+<!-- ===================================================== 10 -->
+<section id="s10">
+  <h2><span class="n">10</span>後端與資料管線</h2>
+  <h3>資料來源</h3>
+  <div class="scroll">
+  <table class="w880">
+    <thead><tr><th>來源</th><th>內容</th><th>用在哪</th><th>狀態</th></tr></thead>
+    <tbody>
+      <tr><td>KAMIS<br><span class="mono">kamis.kilimo.go.ke</span></td><td>肯亞農業部。47 個郡、每郡約 5 個市場、150 多個品項的批發、零售、產地價，單位 KES/kg，可匯出 Excel</td><td>肯亞側官方價（D3、D14）</td><td>網站已確認。抓取方式和使用條款 <span class="tag t-ver">待驗證</span></td></tr>
+      <tr><td>KilimoSTAT API<br><span class="mono">statistics.kilimo.go.ke</span></td><td>同一個部會的開放資料平台，有價格下載端點</td><td>優先用它取代爬網頁</td><td>欄位 <span class="tag t-ver">待驗證</span></td></tr>
+      <tr><td>WFP Food Prices（HDX）</td><td>肯亞、烏干達各市場的月價 CSV，多年歷史，開放授權</td><td>History、Season；烏干達側官方價的底</td><td>已確認可下載</td></tr>
+      <tr><td>烏干達日價</td><td>候選：RATIN（EAGC）、Farmgain、Infotrade</td><td>烏干達側官方價</td><td><span class="tag t-ver">待驗證</span> MVP 先用 WFP 月價加群眾回報撐著，這正好是回報價最有價值的地方</td></tr>
+      <tr><td>匯率</td><td>兩國央行公布值或公開匯率 API</td><td>雙幣顯示、STR 門檻換算</td><td>待選</td></tr>
+      <tr><td>EAC 簡化貿易制度（STR）</td><td>原產於 EAC、在共同清單上、單批低於 2,000 美元的貨，憑簡化原產地證明免進口關稅；邊境的 Trade Information Desk 可以協助開證明</td><td>Border &amp; FX 裡的免稅卡</td><td>規則已查證。其他規費仍可能適用，卡片上要寫明這是規則說明，不是法律意見</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>排程與佇列</h3>
+  <div class="scroll">
+  <table class="w760">
+    <thead><tr><th>工作</th><th>觸發</th><th>做什麼</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">ingest:kamis</td><td>每日 06:00 EAT</td><td>抓官方價進 staging 表；<code>normalize</code> 把來源的品項名、市場名、單位對到我們的目錄，換成每公斤、標幣別，寫入 <code>official_prices</code></td></tr>
+      <tr><td class="mono">ingest:wfp</td><td>每週</td><td>HDX 的肯亞、烏干達 CSV 進 <code>official_prices</code>（<code>freq=month</code>）</td></tr>
+      <tr><td class="mono">ingest:fx</td><td>每小時</td><td>寫 <code>fx_rates</code></td></tr>
+      <tr><td class="mono">report consumer</td><td>Queue：每筆回報</td><td>§7 的拒收、隔離、加權；寫 <code>crowd_reports</code>；對該（品項、市場、等級）重算快照</td></tr>
+      <tr><td class="mono">aggregate</td><td>回報觸發；每晚全量重算</td><td>加權中位數、P25、P75、人數、信心格，寫 <code>price_snapshots</code> 並推進 KV</td></tr>
+      <tr><td class="mono">season:build</td><td>每月</td><td>月指數 ＝ 各年「當月價 ÷ 前後 12 個月移動平均」的中位數，至少 3 年資料才出</td></tr>
+      <tr><td class="mono">reputation</td><td>每晚</td><td>依當天最終區間更新每台裝置的信用分</td></tr>
+      <tr><td class="mono">demands:expire</td><td>每小時</td><td>到期下架；對雙方發「有成交嗎」的詢問</td></tr>
+      <tr><td class="mono">sms consumer</td><td>Queue</td><td>價格卡、聯絡方式、驗證碼；失敗重試 3 次進死信佇列</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>成交一筆，資料怎麼流 <span class="tag t-disc">D5 D12</span></h3>
+  <ol class="steps">
+    <li><b>S5 按 Save</b>widget 送 <code>POST /v1/deals</code>，帶 Idempotency-Key。網路不穩重送也只會有一筆。</li>
+    <li><b>先顧使用者的帳</b>API 同步寫入 <code>deals</code>（私人帳本），立刻回 201，畫面顯示「Saved」。她的誘因是自己的帳（D12），所以這一步絕不能被後面拖累。</li>
+    <li><b>再顧大家的價</b>同一筆請求往 Queue 丟一則訊息。消費者把它去識別化：拿掉裝置 ID 以外的一切、換成每公斤，過 §7 的五道防線，寫入 <code>crowd_reports</code>。</li>
+    <li><b>更新快照</b>重算該（品項、市場、等級）的中位數和信心格，推進 KV。下一個打開 S3 的人看到的就是新的數字。</li>
+  </ol>
+</section>
+
+<!-- ===================================================== 11 -->
+<section id="s11">
+  <h2><span class="n">11</span>資料模型與 API</h2>
+  <h3>主要資料表（D1）</h3>
+  <div class="scroll">
+  <table class="w880">
+    <thead><tr><th>表</th><th>重點欄位</th><th>對應</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">commodities</td><td class="mono">id, name_en, name_sw, icon, grades[], perishability</td><td>D1</td></tr>
+      <tr><td class="mono">commodity_units</td><td class="mono">commodity_id, unit, kg_equiv, country</td><td>補充：袋、gorogoro、debe、箱</td></tr>
+      <tr><td class="mono">markets</td><td class="mono">id, name, country, currency, lat, lon, map_x, map_y, nb_up, nb_down, nb_left, nb_right, source_codes</td><td>D2、D8</td></tr>
+      <tr><td class="mono">routes</td><td class="mono">from_market, to_market, km, cost_per_kg, crosses_border, loss_rate</td><td>D8 的路費</td></tr>
+      <tr><td class="mono">official_prices</td><td class="mono">commodity_id, market_id, grade, date, freq, price_type, price_per_kg, currency, source, fetched_at</td><td>D3、D14</td></tr>
+      <tr><td class="mono">fx_rates</td><td class="mono">base, quote, rate, source, ts</td><td>補充</td></tr>
+      <tr><td class="mono">devices</td><td class="mono">id, token_hash, phone_hash?, lang, home_market_id, reputation, created_at</td><td>D15</td></tr>
+      <tr><td class="mono">favorites</td><td class="mono">device_id, commodity_id, position</td><td>D1</td></tr>
+      <tr><td class="mono">deals</td><td class="mono">id, device_id, side, commodity_id, grade, market_id, qty, unit, price_per_kg, total, currency, first_offer, closed, transport_paid?, photo_id?, created_at</td><td>D5、D12（私人帳本）</td></tr>
+      <tr><td class="mono">crowd_reports</td><td class="mono">id, origin(deal|manual|demand_bid), device_id, side, commodity_id, grade, market_id, price_per_kg, currency, weight, photo_verified, status(accepted|quarantined|rejected), created_at</td><td>D5、D11、D13</td></tr>
+      <tr><td class="mono">price_snapshots</td><td class="mono">commodity_id, market_id, grade, date, median, p25, p75, n_reports, n_reporters, confidence, computed_at</td><td>D3、D9</td></tr>
+      <tr><td class="mono">season_index</td><td class="mono">commodity_id, market_id, month, index, years_used</td><td>D10</td></tr>
+      <tr><td class="mono">demands</td><td class="mono">id, buyer_device_id, commodity_id, grade, qty, unit, bid_per_kg, currency, market_id, contact_mode, status, expires_at</td><td>D7</td></tr>
+      <tr><td class="mono">demand_interests</td><td class="mono">demand_id, seller_device_id, status, outcome?, created_at</td><td>補充：履約率</td></tr>
+      <tr><td class="mono">photos</td><td class="mono">id, sha256, kind(recognize|proof), predicted, confirmed, r2_key?, consent</td><td>拍照、D13</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>API</h3>
+  <div class="scroll">
+  <table class="w880">
+    <thead><tr><th>端點</th><th>做什麼</th><th>對應</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">POST /v1/devices</td><td>匿名註冊，回簽過的裝置權杖</td><td>D15</td></tr>
+      <tr><td class="mono">GET /v1/bootstrap</td><td>目錄、市場、單位、字串的版本與內容，帶 ETag，平常回 304</td><td>D1、D2</td></tr>
+      <tr><td class="mono">GET /v1/prices?c&amp;m&amp;g</td><td>官方價、回報價、區間、信心格、7 日走勢、匯率，一包帶回</td><td>D3、D4</td></tr>
+      <tr><td class="mono">GET /v1/prices/compare?c&amp;from</td><td>各市場依淨價排序，給「不賣還能去哪」用</td><td>D8、補充</td></tr>
+      <tr><td class="mono">GET /v1/trends/history?c&amp;m&amp;range</td><td>30、90、365 天，降到最多 24 個點（240px 寬畫不下更多）</td><td>D9</td></tr>
+      <tr><td class="mono">GET /v1/trends/season?c&amp;m</td><td>12 個月指數、最便宜月、最貴月、放幾個月大約多賺多少</td><td>D10</td></tr>
+      <tr><td class="mono">POST /v1/deals</td><td>寫帳本；成交的話順便產生匿名回報</td><td>D5、D12</td></tr>
+      <tr><td class="mono">GET /v1/me/deals · /v1/me/summary</td><td>我的成交紀錄；本週營收、筆數、「你賣得比市價高 6%」</td><td>D12</td></tr>
+      <tr><td class="mono">POST /v1/reports</td><td>手動回報：品項（預設剛選的）、market、quality、價格、買或賣</td><td>D11</td></tr>
+      <tr><td class="mono">GET /v1/demands?c&amp;from · POST /v1/demands</td><td>依淨價排序的需求清單；貼需求（要先綁電話）</td><td>D7</td></tr>
+      <tr><td class="mono">POST /v1/demands/:id/interest · /close</td><td>我有興趣（觸發聯絡流程）；回報有沒有成交</td><td>補充</td></tr>
+      <tr><td class="mono">GET /v1/map?c&amp;from</td><td>每個節點的需求總量、最高出價、淨價、排名、螢幕座標</td><td>D8</td></tr>
+      <tr><td class="mono">POST /v1/recognize</td><td>圖片進，前三名候選出</td><td>拍照</td></tr>
+      <tr><td class="mono">POST /v1/photos</td><td>成交佐證照</td><td>D13</td></tr>
+      <tr><td class="mono">POST /v1/sms/card · POST /v1/phone/verify</td><td>把價格卡或聯絡方式寄到自己手機；綁定電話</td><td>補充</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ===================================================== 12 -->
+<section id="s12">
+  <h2><span class="n">12</span>容錯與邊界情況</h2>
+  <div class="scroll">
+  <table class="w760">
+    <thead><tr><th>狀況</th><th>系統怎麼做</th></tr></thead>
+    <tbody>
+      <tr><td>我們的 API 逾時或掛掉</td><td>顯示 localStorage 裡同一個（品項、市場）上次的回應，標「Last updated 18 Sep 06:10」。計算機和議價照常能用，因為它們在本地算</td></tr>
+      <tr><td>官方價超過 3 天沒更新</td><td>日期變色標「old」，公平區間自動放寬。價格旁邊永遠有日期，這條不能省</td></tr>
+      <tr><td>這個市場沒有官方價</td><td>用最近的有官方價的市場，加上兩地歷史價差，標「estimated from Bungoma」</td></tr>
+      <tr><td>回報者不到 3 人</td><td>不顯示回報價，顯示「Not enough reports. Be the first.」</td></tr>
+      <tr><td>機型不支援圖片上傳，或辨識信心低</td><td>左軟鍵改成 Search；辨識失敗直接落到九宮格</td></tr>
+      <tr><td>POST 送到一半斷線</td><td>widget 帶同一個 Idempotency-Key 重送，伺服器去重</td></tr>
+      <tr><td>佇列消費者失敗</td><td>重試 3 次後進死信佇列。帳本已經先寫好了，使用者不受影響</td></tr>
+      <tr><td>手機完全沒訊號</td><td>Cloud Phone 沒有離線模式，畫面會停住，這是平台限制。對策是出門前按「SMS me this card」，把今天的價格卡寄到簡訊收件匣，在市場裡沒網路也看得到</td></tr>
+      <tr><td>128×160 的小螢幕</td><td>地圖改清單、九宮格改單欄、字級照官方指引降到 12pt</td></tr>
+      <tr><td>視覺 API 費用暴衝</td><td>每台裝置每日上限、相同影像雜湊快取、全站每日預算熔斷後自動停用 Photo 鍵</td></tr>
+      <tr><td>隱私</td><td>核心功能不收任何個資。電話號碼只存加鹽雜湊，另存一份加密的給聯絡中繼用。回報價要滿 3 人才顯示，避免從單筆資料認出人</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ===================================================== 13 -->
+<section id="s13">
+  <h2><span class="n">13</span>對應評分項目</h2>
+  <div class="scroll">
+  <table class="w760">
+    <thead><tr><th>評分</th><th>細項</th><th>我們拿什麼回答</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="3"><b>創意 15%</b></td><td>問題深化</td><td>引 J-PAL 的機制：利潤來自換市場，不是來自知道價格。在地單位、雙幣換匯、買賣雙角色、治安考量下只公開到市場層級</td></tr>
+      <tr><td>互動型態</td><td>數字鍵就是輸入（不用對焦輸入框）；泡泡地圖按編號直跳；把手機轉過去給對方看的 Show card</td></tr>
+      <tr><td>技術拼接</td><td>鎖在目錄裡的視覺模型＋群眾回報的穩健統計＋簡訊側通道，全部接在一個雲端渲染的按鍵機平台上</td></tr>
+      <tr><td rowspan="3"><b>技術 30%</b></td><td>軟體設計</td><td>monorepo；議價引擎和信用聚合是前後端共用的純函式，整數運算，可做性質測試；功能資料夾一對一對應需求</td></tr>
+      <tr><td>前端</td><td>React＋TS；四種螢幕尺寸；能力偵測；同一份碼同時是 Cloud Phone widget 和智慧機 PWA</td></tr>
+      <tr><td>後端與雲端</td><td>Workers、D1、KV、R2、Queues、Cron；讀寫分離；GitHub Actions 跑型別檢查、單元測試、按鍵 e2e、預覽部署</td></tr>
+      <tr><td rowspan="3"><b>完成度 30%</b></td><td>功能可操作</td><td>S1 到 S5 整條走得通，接真的官方資料，不是假畫面</td></tr>
+      <tr><td>穩定性</td><td>§12 每一列都是一個測試案例；你們現有的測試框架已經能切換網路為 flaky、down</td></tr>
+      <tr><td>可佈署</td><td>Pages 加 Workers，一個指令上線，每個 PR 有預覽網址</td></tr>
+      <tr><td rowspan="3"><b>實用 25%</b></td><td>解法具體</td><td>每個功能對到一個真實時刻：站在攤位前、對方剛開價、決定明天去哪個市場</td></tr>
+      <tr><td>應用規模</td><td>隨機對照試驗證明光是資訊就讓利潤 +17–18%；Busia 占肯烏非正式農產貿易約四分之三；Sauti 139,000 多位使用者證明需求存在</td></tr>
+      <tr><td>延伸潛力</td><td>換一份 <code>catalog</code> 種子資料就能搬到 Malaba、Namanga、Rusumo 等口岸；STR 在 COMESA 也通用；去識別的成交價資料本身對研究單位和政府有價值</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ===================================================== 14 -->
+<section id="s14">
+  <h2><span class="n">14</span>里程碑、待驗證、與現有原型的銜接</h2>
+  <div class="two">
+    <div>
+      <h3>拿到測試機當天先驗五件事</h3>
+      <ol>
+        <li><code>hasFeature('ImageUpload')</code> 的結果，以及檔案挑選器能不能直接開相機。這決定 §6 的體驗。</li>
+        <li>LSK 是不是 <code>Escape</code>、RSK 是不是觸發 <code>back</code> 事件。</li>
+        <li><code>*</code> 和 <code>#</code> 的 <code>event.key</code>。</li>
+        <li>16px 的 Roboto Condensed 在實機上讀不讀得清楚。</li>
+        <li>API 日誌裡 <code>X-Forwarded-For</code> 的樣子，以及從雲端瀏覽器到 Workers 的延遲。</li>
+      </ol>
+      <h3>還沒確認的事</h3>
+      <ul>
+        <li>Cloud Phone 在肯亞已上市但基數小，烏干達是否上市未確認。主要人物設定放在肯亞側的 Busia 商販比較穩。</li>
+        <li>R60+ 這支測試機本身賣在越南、孟加拉、巴基斯坦，不在東非。</li>
+        <li>KAMIS 的抓取方式與條款、烏干達日價來源、單位換算值、Kiswahili 話術。</li>
+      </ul>
+    </div>
+    <div>
+      <h3>三階段切法</h3>
+      <ol>
+        <li><b>核心迴圈。</b>S1 到 S5、官方價（KAMIS＋WFP）、議價引擎、帳本、Report、§7 的聚合。做完這階段就已經是一個完整可上線的 App。</li>
+        <li><b>去哪賣。</b>需求看板、泡泡地圖、淨價排序、History、Season。</li>
+        <li><b>加分。</b>拍照辨識、成交照片、簡訊側通道、Border &amp; FX 卡、Kiswahili。</li>
+      </ol>
+      <h3>Demo 腳本</h3>
+      <p>兩支手機並排。買家在 Bungoma 貼「玉米 500 kg、每公斤 60」。賣家在 Busia 的地圖上看到 1 號泡泡冒出來，回到攤位前，對方開 8,500，畫面亮紅燈、建議還 10,100、旁邊寫著 Bungoma 淨賺多 360。最後 9,700 成交，按 Save，另一支手機上的回報價跟著動。整條資料迴圈在兩分鐘內演完。</p>
+    </div>
+  </div>
+  <h3>和 <code>farm-price-mvp</code>「賣不賣？」原型的銜接</h3>
+  <p>資料夾裡那份單檔原型有四樣東西可以直接沿用：九宮格數字直選、報價檢核量表、扣運費後的淨收益比價、回報加星。要改的有四處：</p>
+  <ol>
+    <li><b>軟鍵對應反了。</b>原型把 <code>Escape</code> 當右軟鍵的「返回」。官方文件是 LSK＝<code>Escape</code>，RSK 觸發 <code>back</code> 事件。照原型的寫法上實機，按左軟鍵會變成返回。</li>
+    <li><b>拿掉 <code>pulse</code>、<code>bounce</code> 和 <code>transition</code> 動畫。</b>每一格動畫都是一次畫面更新，走的是使用者的流量。</li>
+    <li><b>資料換成 Busia。</b>現在是奈及利亞的 ₦、Kano、Lagos，換成 KSh／UGX 和走廊上的市場。</li>
+    <li><b>補上討論的主流程。</b>Area、數量試算、成交回報進帳本、需求地圖、Season。</li>
+  </ol>
+</section>
+
+<footer>
+  <p><b>資料來源</b></p>
+  <ul class="src">
+    <li><a href="https://www.povertyactionlab.org/evaluation/impact-mobile-based-market-information-informal-cross-border-trading-kenya-and-uganda">J-PAL：The Impact of Mobile-Based Market Information on Informal Cross-Border Trading in Kenya and Uganda</a>（Wiseman, “Border Trade and Information Frictions”, 2023 工作論文）</li>
+    <li><a href="https://www.sautiafrica.org/services-products/trade-market-info-platform/">Sauti East Africa：Trade &amp; Market Information Platform</a></li>
+    <li><a href="https://www.sautiafrica.org/meeting-busias-cross-border-traders/">Sauti：Meeting Busia’s Cross-Border Traders</a></li>
+    <li><a href="https://developer.cloudfone.com/docs/guides/cloud-phone-design/">Cloud Phone：Design 指引（軟鍵、字級、螢幕尺寸）</a></li>
+    <li><a href="https://developer.cloudfone.com/docs/reference/feature-detection/">Cloud Phone：Feature Detection</a></li>
+    <li><a href="https://developer.cloudfone.com/docs/reference/data-storage/">Cloud Phone：Data Storage</a></li>
+    <li><a href="https://developer.cloudfone.com/docs/reference/networking/">Cloud Phone：Networking（X-Forwarded-For）</a></li>
+    <li><a href="https://developer.cloudfone.com/docs/guides/architecture/">Cloud Phone：Remote Browser Architecture</a></li>
+    <li><a href="https://developer.cloudfone.com/docs/advanced/graphics-rendering/">Cloud Phone：Graphics Rendering</a></li>
+    <li><a href="https://kamis.kilimo.go.ke/site/market">KAMIS 市場價格</a>、<a href="https://statistics.kilimo.go.ke/">KilimoSTAT</a></li>
+    <li>HDX WFP Food Prices：<a href="https://data.humdata.org/dataset/wfp-food-prices-for-kenya">Kenya</a>、<a href="https://data.humdata.org/dataset/wfp-food-prices-for-uganda">Uganda</a></li>
+    <li><a href="https://www.tralac.org/blog/article/15847-small-scale-trade-and-the-simplified-trade-regime.html">tralac：Small-scale Trade and the Simplified Trade Regime</a></li>
+    <li><a href="https://www.sautiafrica.org/the-simplified-trade-regime-in-the-eac-and-challenges-to-cross-border-traders/">Sauti：The Simplified Trade Regime in the EAC</a></li>
+  </ul>
+  <p>畫面草圖中的價格、匯率、季節曲線都是示意數字。</p>
+</footer>
+
+</div>
