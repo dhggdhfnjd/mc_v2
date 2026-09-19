@@ -66,6 +66,12 @@ If the model cannot load, the app falls back to a colour histogram and says so o
 
 Model © Apple Inc., redistributed under its licence (`public/models/LICENSE-mobileclip.txt`); ONNX export from [Xenova/mobileclip_s0](https://huggingface.co/Xenova/mobileclip_s0).
 
+### Map basemap (optional Google Static Maps)
+
+The demand map draws its bubbles on a hand-drawn SVG schematic by default. Build with `NEXT_PUBLIC_GOOGLE_MAPS_KEY=<key>` (CI reads the `GOOGLE_MAPS_KEY` repository secret) and they sit on a real map instead: one dark, label-free Google Static Maps image (zoom 7, 277×226, shown at 240 px) framing all eleven markets. `app/lib/staticmap.ts` projects each market onto it with Web Mercator and pushes overlapping bubbles apart; a thin leader line points back to the true position. The image URL is the same for every food, so changing food only redraws the SVG overlay. If the image fails to load (bad key, quota, offline) the screen falls back to the schematic; `?map=svg` forces the schematic for comparison.
+
+The key ends up in the page, so restrict it in Google Cloud Console to the **Maps Static API** and to the widget's HTTP referrer (e.g. `https://<user>.github.io/*`).
+
 ### Crowd-price trust (D13–D15)
 
 No identity checks. `app/lib/trust.ts`: reports below half or above double the official price are refused; reports more than 20% from both the official price and the current median are quarantined until two other devices corroborate them; one vote per device; weighted median with a 3-day half-life; behaviour-based reputation (0.3 → 1.0); photo and completed-deal bonuses; buyer and seller medians balanced; nothing is shown below three independent reporters. Try it: report maize at 900 (refused) or 40 (held).
