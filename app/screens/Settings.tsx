@@ -11,9 +11,11 @@ import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
 import { market } from "../lib/catalog";
 
-const ENTRIES: { icon: string; label: TKey; mode: "lang" | "country" }[] = [
+// the market list is still one of the three ways to set your location, from the buyer map's
+// "From where?"; here the second cell types coordinates instead
+const ENTRIES: { icon: string; label: TKey; mode: "lang" | "coords" }[] = [
   { icon: "🌐", label: "lang", mode: "lang" },
-  { icon: "📍", label: "country", mode: "country" },
+  { icon: "📌", label: "coords", mode: "coords" },
 ];
 
 export default function Settings({ active }: ScreenProps) {
@@ -23,7 +25,8 @@ export default function Settings({ active }: ScreenProps) {
 
   const open = (i: number) => {
     const entry = ENTRIES[i];
-    if (entry) nav.push("langsel", { mode: entry.mode });
+    if (entry?.mode === "lang") nav.push("langsel", { mode: "lang" });
+    if (entry?.mode === "coords") nav.push("coords");
   };
 
   const onKey = (key: Key): boolean => {
@@ -39,7 +42,7 @@ export default function Settings({ active }: ScreenProps) {
 
   const values = [
     settings.lang === "en" ? "English" : "Kiswahili",
-    settings.marketId ? market(settings.marketId).name : "–",
+    settings.fix ? `${settings.fix.lat.toFixed(2)}, ${settings.fix.lon.toFixed(2)}` : settings.marketId ? market(settings.marketId).name : "–",
   ];
   const items: GridItem[] = ENTRIES.map((e, i) => ({
     key: e.mode,

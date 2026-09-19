@@ -13,7 +13,7 @@ export type ScreenName =
   | "photo" | "food"
   | "map" | "price" | "history" | "post"
   | "demand" | "settings" | "langsel"
-  | "where" | "near";
+  | "where" | "near" | "coords";
 
 export type Params = Record<string, unknown>;
 

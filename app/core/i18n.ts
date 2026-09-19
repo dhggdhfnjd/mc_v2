@@ -34,7 +34,9 @@ const en = {
   editHint: "↑↓ field · type numbers · OK",
   nearMe: "Near me", locating: "Finding you…", locate: "Locate", setArea: "Use this",
   noMarketNear: "No market within 100 km", nearest: "Nearest", gps: "GPS", demoLoc: "Demo location", noGps: "No GPS: your area",
-  fromWhere: "From where?", myLocation: "My location", pickCity: "Choose city", change: "change",
+  fromWhere: "From where?", myLocation: "My location", pickCity: "Choose city",
+  coords: "Coordinates", latitude: "Latitude", longitude: "Longitude", coordHint: "* = decimal point · # = minus",
+  checkNumbers: "Check the numbers", noBuyersNear: "No buyers within",
 } as const;
 
 type Dict = Record<keyof typeof en, string>;
@@ -69,7 +71,9 @@ const sw: Dict = {
   editHint: "↑↓ sehemu · namba · Sawa",
   nearMe: "Karibu nami", locating: "Inakutafuta…", locate: "Tafuta", setArea: "Tumia hii",
   noMarketNear: "Hakuna soko ndani ya km 100", nearest: "Karibu zaidi", demoLoc: "Mahali pa demo", noGps: "Hakuna GPS: eneo lako",
-  fromWhere: "Kutoka wapi?", myLocation: "Mahali pangu", pickCity: "Chagua mji", change: "badili",
+  fromWhere: "Kutoka wapi?", myLocation: "Mahali pangu", pickCity: "Chagua mji",
+  coords: "Viwianishi", latitude: "Latitudo", longitude: "Longitudo", coordHint: "* = nukta · # = hasi",
+  checkNumbers: "Kagua namba", noBuyersNear: "Hakuna wanunuzi ndani ya",
 };
 
 const DICTS: Record<Lang, Dict> = { en, sw };

@@ -14,16 +14,21 @@ HOME — products + photo in one paged 3×3 grid (D-pad + OK only)
                                                        ▼
 PRODUCT HUB — 1 Now price · 2 Buyer map · 3 History · 4 I want to buy
   ├─ Now price: dated official price + sufficiently trusted crowd price
-  ├─ Buyer map: market-level locations only
+  ├─ Buyer map: 50 km around you (* = whole corridor); market-level locations only
   │    ├─ Buyer detail: phone number; call outside Mizani
-  │    └─ 0 From where? ─┬─ My location: GPS, 100 km map, OK uses the chosen market
-  │                      └─ Choose city: the market list
+  │    └─ 0 From where? ─┬─ 1 My location: GPS, 100 km map, OK uses the chosen market
+  │                      ├─ 2 Choose city: the market list
+  │                      └─ 3 Coordinates: type latitude / longitude
   ├─ History: 30 / 90 / 365-day trend
   └─ I want to buy: edit market + quantity + price/kg + phone together → review
        └─ one active post per product; edit or close; expires after 3 days
 ```
 
-Settings is reached by the home left soft key and contains only language and trading area.
+Settings is reached by the home left soft key and contains only language and coordinates.
+
+Location is `settings.marketId` plus an optional `settings.fix` (`source: "gps" | "manual"`).
+Prices, transport and net always use `marketId`; with a fix it is the market nearest the point.
+The buyer map centres on the fix when there is one, otherwise on the market.
 
 ## Interaction rules
 

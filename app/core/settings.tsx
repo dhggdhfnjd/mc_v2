@@ -13,8 +13,9 @@ export interface Settings {
   marketId: string | null;
   network: NetworkMode;
   phone: string;
-  /** last device location the user chose to use; null when the area was picked by hand */
-  fix: { lat: number; lon: number; accuracyM?: number } | null;
+  /** where the user is when not simply "at a market": GPS (Near me) or typed coordinates.
+   * null when the area was picked from the market list. marketId is then the nearest market. */
+  fix: { lat: number; lon: number; accuracyM?: number; source?: "gps" | "manual" } | null;
   /** the product most recently opened */
   foodId: string;
 }

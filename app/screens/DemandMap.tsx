@@ -1,41 +1,50 @@
 "use client";
 
-// L2 MAP VIEW — the bubble map: demand for the filtered food "bubbles up" along the Busia
-// corridor. Not a slippy map: Cloud Phone streams draw commands, and panning raster tiles would
-// be slow and costly on data. With NEXT_PUBLIC_GOOGLE_MAPS_KEY set at build time the bubbles sit
-// on one fixed Google Static Maps image (lib/staticmap.ts); without it, if the image fails, or
-// with ?map=svg, they sit on the hand-drawn SVG schematic.
+// L2 MAP VIEW — the bubble map: demand for the filtered food "bubbles up" around you.
 // Bubble size = quantity wanted, number = rank by net price. D-pad hops between bubbles;
-// pressing a bubble's number jumps straight to it. 0 asks "from where?": device location or a
-// city picked by hand; transport and net are counted from the resulting market.
+// pressing a bubble's number jumps straight to it.
+//
+// Two views. By default the map is framed on 50 km around your location (GPS, typed
+// coordinates, or the market you picked) and only buyers inside that circle get bubbles; a row
+// counts the ones farther away. * toggles the whole Busia corridor. 0 asks "From where?".
+//
+// Not a slippy map: Cloud Phone streams draw commands, and panning raster tiles would be slow
+// and costly on data. With NEXT_PUBLIC_GOOGLE_MAPS_KEY set at build time each view is one Google
+// Static Maps image (lib/staticmap.ts) and everything that changes is SVG on top. Without a key,
+// if the image fails, or with ?map=svg, the 50 km view is drawn on a plain background and the
+// corridor view on the hand-drawn schematic.
 
 import { useMemo, useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Row } from "../components/ui";
+import type { TKey } from "../core/i18n";
 import { display } from "../core/display";
 import { isDigit, type Key } from "../core/keypad";
 import { useNav } from "../core/router";
-import { useSettings } from "../core/settings";
+import { useSettings, type Settings } from "../core/settings";
 import { useApi } from "../core/useApi";
 import { getDemands, type DemandView } from "../lib/api";
 import { KES_TO_UGX, MARKETS, ROADS, commodity, market } from "../lib/catalog";
 import { fmt } from "../lib/money";
-import { fitView, project, spread, staticMapUrl } from "../lib/staticmap";
+import { circleBox, distanceKm, fitView, kmPerPx, project, spread, staticMapUrl, type LatLon, type MapView } from "../lib/staticmap";
 
 const W = 240;
 const H = 196;
 const BORDER_X = 110;
+const RADIUS_KM = 50;
 
 const MAP_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
 // the extra bottom padding keeps bubbles off the Google logo, which must stay visible
-const VIEW = fitView(MARKETS, W / H, { top: 18, right: 16, bottom: 26, left: 16 }, 400);
-const SCALE = W / VIEW.width;
-const toScreen = (p: { lat: number; lon: number }) => {
-  const q = project(p, VIEW);
-  return { x: q.x * SCALE, y: q.y * SCALE };
-};
-const GEO = new Map(MARKETS.map((m) => [m.id, toScreen(m)]));
-const BASEMAP = MAP_KEY ? staticMapUrl(VIEW, MAP_KEY) : "";
+const PAD = { top: 18, right: 16, bottom: 26, left: 16 };
+const CORRIDOR = fitView(MARKETS, W / H, PAD, 400);
+
+/** one line saying where distances are counted from, for the map and "From where?" */
+export function originLabel(settings: Settings, t: (k: TKey) => string): string {
+  const name = market(settings.marketId ?? "busia-ke").name;
+  if (settings.fix?.source === "manual") return `📌 ${settings.fix.lat.toFixed(3)}, ${settings.fix.lon.toFixed(3)} · ${name}`;
+  if (settings.fix) return `📍 ${t("myLocation")} · ${name}`;
+  return `🏙️ ${name}`;
+}
 
 interface Bubble {
   marketId: string;
@@ -77,36 +86,58 @@ export default function DemandMap({ active, params }: ScreenProps) {
   const d = display(me.currency, KES_TO_UGX);
   const { data } = useApi(`demands.${c.id}.${marketId}`, () => getDemands(c.id, marketId), [c.id, marketId]);
   const [selId, setSelId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const [failed, setFailed] = useState(false);
   const [forceSvg] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("map") === "svg");
-  const geo = !!BASEMAP && !failed && !forceSvg;
-  const pos = (id: string) => (geo ? GEO.get(id)! : market(id));
-  // the device location, when the user chose it, is only drawable on the real map
-  const you = geo && settings.fix ? toScreen(settings.fix) : pos(me.id);
 
-  const bubbles = useMemo<Bubble[]>(() => {
+  const origin: LatLon = settings.fix ?? me;
+  // rounded to ~1 km so GPS jitter and retyped coordinates reuse the cached image
+  const oLat = Math.round(origin.lat * 100) / 100;
+  const oLon = Math.round(origin.lon * 100) / 100;
+  const nearView = useMemo<MapView>(() => fitView(circleBox({ lat: oLat, lon: oLon }, RADIUS_KM), W / H, PAD, 480), [oLat, oLon]);
+  const view = showAll ? CORRIDOR : nearView;
+  const scale = W / view.width;
+  const imageOk = !!MAP_KEY && !failed && !forceSvg;
+  // the 50 km view is always geographic; the corridor falls back to the hand-drawn schematic
+  const geo = !showAll || imageOk;
+  const toScreen = (p: LatLon) => {
+    const q = project(p, view);
+    return { x: q.x * scale, y: q.y * scale };
+  };
+  const pos = (id: string) => (geo ? toScreen(market(id)) : market(id));
+  const you = geo ? toScreen(origin) : market(me.id);
+  const inRange = (id: string) => showAll || distanceKm(origin, market(id)) <= RADIUS_KM;
+
+  const { bubbles, hidden } = useMemo(() => {
     const byMarket = new Map<string, Bubble>();
+    const far = new Set<string>();
     for (const x of data ?? []) {
+      if (!inRange(x.marketId)) {
+        far.add(x.marketId);
+        continue;
+      }
       const b = byMarket.get(x.marketId);
       if (b) {
         b.kg += x.kg;
         b.count += 1;
       } else {
-        const p = geo ? GEO.get(x.marketId)! : market(x.marketId);
+        const p = pos(x.marketId);
         byMarket.set(x.marketId, { marketId: x.marketId, x: p.x, y: p.y, ax: p.x, ay: p.y, r: 0, best: x, kg: x.kg, count: 1 });
       }
     }
     const all = [...byMarket.values()];
     all.forEach((b) => (b.r = Math.max(9, Math.min(19, 5 + Math.sqrt(b.kg) / 2.6))));
     // real geography crowds the border towns together; the schematic was drawn apart by hand
-    return geo ? spread(all, W, H) : all;
-  }, [data, geo]);
+    return { bubbles: geo ? spread(all, W, H) : all, hidden: far.size };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, geo, view, oLat, oLon, showAll]);
 
   const sel = bubbles.find((b) => b.marketId === selId) ?? bubbles[0] ?? null;
 
   const onKey = (key: Key): boolean => {
     if (key === "LSK") return nav.home(), true;
     if (key === "0") return nav.push("where"), true;
+    if (key === "*") return setShowAll((v) => !v), setSelId(null), true;
     if (!sel) return false;
     if (key === "Up" || key === "Down" || key === "Left" || key === "Right") {
       const next = neighbour(sel, bubbles, key);
@@ -123,6 +154,8 @@ export default function DemandMap({ active, params }: ScreenProps) {
   };
 
   const localC = sel ? sel.best.netC : 0;
+  const onMap = (p: { x: number; y: number }) => p.x >= 0 && p.x <= W && p.y >= 0 && p.y <= H;
+  const circlePx = (RADIUS_KM / kmPerPx(oLat, view.zoom)) * scale;
   return (
     <Screen
       active={active}
@@ -131,23 +164,36 @@ export default function DemandMap({ active, params }: ScreenProps) {
       onKey={onKey}
       flush
     >
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", flex: "none" }} role="img" aria-label="demand map of the Busia corridor">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", flex: "none" }} role="img" aria-label="buyer map">
         <rect x="0" y="0" width={W} height={H} fill="#0B130F" />
-        {geo ? (
-          <image href={BASEMAP} x="0" y="0" width={W} height={VIEW.height * SCALE} preserveAspectRatio="none" onError={() => setFailed(true)} />
-        ) : (
+        {imageOk ? (
+          <image href={staticMapUrl(view, MAP_KEY)} x="0" y="0" width={W} height={view.height * scale} preserveAspectRatio="none" onError={() => setFailed(true)} />
+        ) : null}
+        {showAll && !geo ? (
           <>
             <line x1={BORDER_X} y1="0" x2={BORDER_X} y2={H} stroke="#5E7A68" strokeWidth="1" strokeDasharray="3 4" />
             {ROADS.map((road) => (
               <polyline key={road.join()} points={road.map((id) => `${market(id).x},${market(id).y}`).join(" ")} fill="none" stroke="#2C4436" strokeWidth="2" />
             ))}
           </>
+        ) : null}
+        {showAll ? (
+          <>
+            <text x="5" y="11" fill="#8FAE98" fontSize="9">UGANDA</text>
+            <text x={W - 5} y="11" fill="#8FAE98" fontSize="9" textAnchor="end">KENYA</text>
+          </>
+        ) : (
+          <>
+            <circle cx={you.x} cy={you.y} r={circlePx} fill="#FFD23F" fillOpacity="0.05" stroke="#FFD23F" strokeWidth="1.5" strokeDasharray="4 4" />
+            <text x={you.x} y={you.y - circlePx + 11} fill="#FFD23F" fontSize="9" textAnchor="middle" stroke="#0B130F" strokeWidth="3" paintOrder="stroke">{RADIUS_KM} km</text>
+          </>
         )}
-        <text x="5" y="11" fill="#8FAE98" fontSize="9">UGANDA</text>
-        <text x={W - 5} y="11" fill="#8FAE98" fontSize="9" textAnchor="end">KENYA</text>
-        {MARKETS.filter((m) => !bubbles.some((b) => b.marketId === m.id) && m.id !== me.id).map((m) => (
-          <circle key={m.id} cx={pos(m.id).x} cy={pos(m.id).y} r="2.5" fill="#8FAE98" />
-        ))}
+        {MARKETS.filter((m) => !bubbles.some((b) => b.marketId === m.id) && m.id !== me.id)
+          .map((m) => ({ id: m.id, p: pos(m.id) }))
+          .filter(({ p }) => onMap(p))
+          .map(({ id, p }) => (
+            <circle key={id} cx={p.x} cy={p.y} r="2.5" fill="#8FAE98" />
+          ))}
         {/* under the bubbles, so a bubble on your own market keeps its number readable */}
         {geo && settings.fix ? (
           <circle cx={you.x} cy={you.y} r="4" fill="#6FB7FF" stroke="#fff" strokeWidth="1.5" />
@@ -186,12 +232,13 @@ export default function DemandMap({ active, params }: ScreenProps) {
             <Row mut l={`${t("transport")} −${d.perKg(sel.best.transportC)} · ${sel.best.km} km`} r={<span className="up">{t("net")} {d.perKg(localC)}</span>} />
           </>
         ) : (
-          <div className="mut">{data ? t("noDemand") : "Loading…"}</div>
+          <div className="mut">{!data ? "Loading…" : showAll ? t("noDemand") : `${t("noBuyersNear")} ${RADIUS_KM} km`}</div>
         )}
+        {/* key hints lead, like the numbered menus: 0 changes the location, * the view */}
         <Row
           mut
-          l={settings.fix ? `📍 ${t("myLocation")} · ${me.name}` : `🏙️ ${me.name}`}
-          r={`0 ${t("change")}`}
+          l={`0 ${originLabel(settings, t)}`}
+          r={showAll ? `* ${RADIUS_KM} km` : hidden ? `* +${hidden} > ${RADIUS_KM} km` : undefined}
         />
       </div>
     </Screen>

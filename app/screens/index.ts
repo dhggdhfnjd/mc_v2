@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { ScreenProps } from "../components/Screen";
 import type { ScreenName } from "../core/router";
 import DemandDetail from "./DemandDetail";
+import Coords from "./Coords";
 import DemandMap from "./DemandMap";
 import DemandPost from "./DemandPost";
 import FoodDetail from "./FoodDetail";
@@ -28,4 +29,5 @@ export const SCREENS: Record<ScreenName, ComponentType<ScreenProps>> = {
   langsel: LangCountry,
   where: Where,
   near: Nearby,
+  coords: Coords,
 };

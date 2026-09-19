@@ -81,7 +81,7 @@ export default function Nearby({ active, params }: ScreenProps) {
     if (isDigit(key) && Number(key) >= 1 && Number(key) <= inside.length) return setSel(Number(key) - 1), true;
     if (key === "OK" && cur && fix) {
       const located = fix.source !== "market";
-      update({ marketId: cur.m.id, fix: located ? { lat: fix.lat, lon: fix.lon, accuracyM: fix.accuracyM } : null });
+      update({ marketId: cur.m.id, fix: located ? { lat: fix.lat, lon: fix.lon, accuracyM: fix.accuracyM, source: "gps" } : null });
       nav.back(typeof params.backTo === "number" ? params.backTo : 1);
       return true;
     }

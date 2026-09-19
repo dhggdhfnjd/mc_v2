@@ -30,9 +30,14 @@ handset layout. `?bare=1` forces full screen and `?size=qq` forces QQVGA.
    page. The post expires after three days and can be edited or closed.
 5. A seller opens a market bubble, cycles through buyers with Up/Down, and calls the displayed
    number directly. Mizani has no chat, negotiation or transaction workflow.
-6. On the buyer map, `0` asks "From where?": **My location** (`navigator.geolocation`, shown as a
-   100 km map with the nearest markets; OK uses the selected one) or **Choose city** by hand.
-   Transport and net are counted from that market.
+6. The buyer map opens on **50 km around your location** and only buyers inside that circle get
+   bubbles; `* +N > 50 km` counts the rest and `*` toggles the whole corridor.
+7. Your location can be set three ways, all from the buyer map's `0` "From where?":
+   **My location** (`navigator.geolocation`, shown as a 100 km map; OK uses the selected market),
+   **Choose city** from the market list, or **Coordinates** typed as latitude/longitude (`*` is the
+   decimal point, `#` the minus sign). Settings → Coordinates opens the same editor. Prices,
+   transport and net are counted from the market nearest your location; the map centres on the
+   exact point.
 
 ### Map basemap and location
 
@@ -48,7 +53,7 @@ widget's HTTP referrer.
 19 Sep 2026). `?at=lat,lon` pins a location for demos; if location is denied or times out, the
 chosen city is used and the screen says so.
 
-Settings is the home left soft key and contains only Language and Trading area. On price/history/map
+Settings is the home left soft key and contains only Language and Coordinates. On price/history/map
 screens, the left soft key returns directly to Products.
 
 ## Important product rules
@@ -71,7 +76,8 @@ prototype and are retained only as research history until their screenshots are 
 | --- | --- |
 | `↑ ↓ ← →`, `Enter` | move and confirm; the only product-selection method on Home |
 | `1`–`4` | product-hub shortcut; digits type values inside forms |
-| `0` | buyer map: choose device location or city |
+| `0` | buyer map: set your location (GPS, city or coordinates) |
+| `*` | buyer map: 50 km view ↔ whole corridor |
 | `Esc` / `Q` | left soft key |
 | `F12` / `W` / device back event | right soft key or back |
 | `#` | switch KSh / USh on the current-price screen |
