@@ -1,1 +1,19 @@
+<<<<<<< HEAD
 node_modules/
+=======
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+.env*
+*.tsbuildinfo
+next-env.d.ts
+/coverage
+>>>>>>> 610c96fa8733a57d3407d63c2cc8b70a72384ebf
