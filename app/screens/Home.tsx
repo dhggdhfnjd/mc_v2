@@ -1,72 +1,87 @@
 "use client";
 
-// L1 — the main menu. Six options, each an icon plus its word, laid out on the 1–9 keys so one
-// press opens one branch. FOOD asks how you want to name the food; MAP, NOW PRICE and HISTORY
-// open straight onto the food you last looked at and carry a Food filter on the left soft key.
+// Products and photo recognition share one paged 3×3 grid. This screen deliberately has no
+// digit shortcuts: the visible highlight, D-pad and OK are the only product-selection model.
 
+import { useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
-import { Grid, useGridNav, type GridItem } from "../components/ui";
-import type { TKey } from "../core/i18n";
-import { isDigit, type Key } from "../core/keypad";
-import { useNav, type ScreenName } from "../core/router";
+import { Grid, type GridItem } from "../components/ui";
+import type { Key } from "../core/keypad";
+import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
-import { commodity, market } from "../lib/catalog";
+import { COMMODITIES, market } from "../lib/catalog";
 
-interface Entry {
-  icon: string;
-  label: TKey;
-  screen: ScreenName;
-  /** the three filtered views need a food before they can draw anything */
-  filtered?: boolean;
-}
-
-const ENTRIES: Entry[] = [
-  { icon: "🥬", label: "food", screen: "foodin" },
-  { icon: "🗺️", label: "map", screen: "map", filtered: true },
-  { icon: "💰", label: "nowPrice", screen: "price", filtered: true },
-  { icon: "📈", label: "histPrice", screen: "history", filtered: true },
-  { icon: "📒", label: "myDeal", screen: "ledger" },
-  { icon: "⚙️", label: "setting", screen: "settings" },
-];
+const PER_PAGE = 9;
 
 export default function Home({ active }: ScreenProps) {
   const nav = useNav();
-  const { settings, t } = useSettings();
-  const grid = useGridNav(ENTRIES.length);
+  const { settings, update, t } = useSettings();
+  const [index, setIndex] = useState(0);
 
-  const open = (i: number) => {
-    const entry = ENTRIES[i];
+  const entries = [
+    { key: "photo", icon: "📷", label: t("photo"), commodityId: null },
+    ...COMMODITIES.map((c) => ({
+      key: c.id,
+      icon: c.icon,
+      label: settings.lang === "sw" ? c.sw : c.en,
+      commodityId: c.id,
+    })),
+  ];
+  const safe = Math.min(index, entries.length - 1);
+  const page = Math.floor(safe / PER_PAGE);
+  const pages = Math.ceil(entries.length / PER_PAGE);
+  const start = page * PER_PAGE;
+  const shown = entries.slice(start, start + PER_PAGE);
+
+  const open = () => {
+    const entry = entries[safe];
     if (!entry) return;
-    nav.push(entry.screen, entry.filtered ? { commodityId: settings.foodId } : {});
+    if (!entry.commodityId) nav.push("photo");
+    else {
+      update({ foodId: entry.commodityId });
+      nav.push("food", { commodityId: entry.commodityId });
+    }
+  };
+
+  const moveVertical = (delta: number) => {
+    const next = safe + delta;
+    if (next >= 0 && next < entries.length) setIndex(next);
   };
 
   const onKey = (key: Key): boolean => {
-    if (grid.onKey(key)) return true;
-    if (key === "OK") return open(grid.index), true;
-    if (isDigit(key) && key !== "0") {
-      const i = Number(key) - 1;
-      if (i < ENTRIES.length) {
-        grid.setIndex(i);
-        open(i);
-      }
-      return true;
+    switch (key) {
+      case "Left":
+        return setIndex(safe > 0 ? safe - 1 : entries.length - 1), true;
+      case "Right":
+        return setIndex(safe + 1 < entries.length ? safe + 1 : 0), true;
+      case "Up":
+        return moveVertical(-3), true;
+      case "Down":
+        return moveVertical(3), true;
+      case "OK":
+        return open(), true;
+      case "LSK":
+        return nav.push("settings"), true;
+      default:
+        return false;
     }
-    return false;
   };
 
-  const items: GridItem[] = ENTRIES.map((e) => ({ key: e.label, icon: e.icon, label: t(e.label) }));
-  const food = commodity(settings.foodId);
+  const cells: GridItem[] = shown.map((entry) => ({ key: entry.key, icon: entry.icon, label: entry.label }));
 
   return (
     <Screen
       active={active}
-      title={`${food.icon} Mizani`}
+      title="Mizani"
       sub={settings.marketId ? market(settings.marketId).name : undefined}
-      soft={{ c: t("ok"), r: t("exit") }}
+      soft={{ l: t("setting"), c: t("ok"), r: t("exit") }}
       onKey={onKey}
     >
-      <Grid items={items} sel={grid.index} big />
-      <div className="mut hint">{t("pickOne")}</div>
+      <Grid items={cells} sel={safe - start} big numbered={false} />
+      <div className="row mut hint">
+        <span>{t("arrowPick")}</span>
+        <span>{t("page")} {page + 1}/{pages}</span>
+      </div>
     </Screen>
   );
 }

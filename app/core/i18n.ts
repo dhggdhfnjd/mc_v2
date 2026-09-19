@@ -7,6 +7,8 @@ const en = {
   back: "↩", ok: "✓", exit: "Exit", open: "Open",
   photo: "Photo", page: "page",
   food: "Food", nowPrice: "Now price", histPrice: "History", myDeal: "My deals", setting: "Settings",
+  buyerMap: "Buyer map", wantBuy: "I want to buy", products: "Products",
+  arrowPick: "Arrows + OK", numberOrArrow: "Press 1–4 or use arrows",
   text: "Text", filter: "Food", pickFood: "Pick the food how?", pickOne: "Press a number",
   country: "Country", bestBuyer: "Best buyer", langCountry: "Language & country",
   pickArea: "Where do you trade?",
@@ -22,6 +24,14 @@ const en = {
   isThis: "Is this…?", none: "None of these → grid", photoFail: "Could not read the photo", demoVision: "Model unavailable: rough colour guess",
   visionLoading: "Loading recognizer (37 MB, once)", visionReady: "Recognizer ready. OK to pick a photo", visionWorking: "Looking…", notSure: "Not a crop I know",
   days: "Days", amount: "Amount",
+  quantity: "Quantity", pricePerKg: "Price per kg", phone: "Phone", next: "Next",
+  review: "Check details", publish: "Publish", published: "Posted for 3 days",
+  publicPhone: "Sellers can see this phone for 3 days", myPost: "My buyer post",
+  edit: "Edit", close: "Close", closed: "Post closed", call: "Call",
+  closeAsk: "Close this post?",
+  unavailable: "Not supported on this phone",
+  step: "Step", required: "Complete the highlighted field", buyerPosts: "buyers",
+  editHint: "↑↓ field · type numbers · OK",
 } as const;
 
 type Dict = Record<keyof typeof en, string>;
@@ -30,6 +40,8 @@ const sw: Dict = {
   ...en,
   back: "↩", ok: "✓", exit: "Toka", open: "Fungua",
   photo: "Picha", food: "Chakula", nowPrice: "Bei sasa", histPrice: "Historia", myDeal: "Mauzo yangu", setting: "Mipangilio",
+  buyerMap: "Ramani ya wanunuzi", wantBuy: "Nataka kununua", products: "Mazao",
+  arrowPick: "Mishale + Sawa", numberOrArrow: "Bonyeza 1–4 au mishale",
   text: "Maandishi", filter: "Chakula", pickFood: "Chagua vipi?", pickOne: "Bonyeza namba",
   country: "Nchi", bestBuyer: "Mnunuzi bora", langCountry: "Lugha na nchi", page: "ukurasa",
   pickArea: "Unafanya biashara wapi?",
@@ -44,6 +56,14 @@ const sw: Dict = {
   lang: "Lugha", network: "Mtandao (demo)", reset: "Futa data ya demo", lastUpdated: "Nje ya mtandao. Mwisho", netError: "Hakuna mtandao. Jaribu tena", retry: "Jaribu",
   isThis: "Ni hii…?", none: "Hakuna kati ya hizi → orodha", visionLoading: "Inapakia (37 MB, mara moja)", visionReady: "Tayari. Sawa kuchagua picha", visionWorking: "Inaangalia…", notSure: "Sijui zao hili",
   days: "Siku", amount: "Kiasi",
+  quantity: "Kiasi", pricePerKg: "Bei kwa kg", phone: "Simu", next: "Endelea",
+  review: "Kagua", publish: "Chapisha", published: "Imewekwa siku 3",
+  publicPhone: "Wauzaji wataona simu hii siku 3", myPost: "Tangazo langu",
+  edit: "Badili", close: "Funga", closed: "Tangazo limefungwa", call: "Piga",
+  closeAsk: "Funga tangazo hili?",
+  unavailable: "Simu hii haiwezi kutumia",
+  step: "Hatua", required: "Jaza sehemu iliyoangaziwa", buyerPosts: "wanunuzi",
+  editHint: "↑↓ sehemu · namba · Sawa",
 };
 
 const DICTS: Record<Lang, Dict> = { en, sw };

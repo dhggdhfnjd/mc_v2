@@ -46,7 +46,7 @@ export function weightedQuantile(items: { v: number; w: number }[], q: number): 
 export function reportWeight(r: CrowdReport, reputation: number, now: number): number {
   const ageDays = Math.max(0, (now - r.at) / DAY);
   const decay = Math.pow(0.5, ageDays / HALF_LIFE_DAYS);
-  const origin = r.origin === "deal" ? 1.2 : r.origin === "bid" ? 0.5 : 1;
+  const origin = r.origin === "deal" ? 1.2 : 1;
   return reputation * decay * origin * (r.photo ? 1.5 : 1);
 }
 

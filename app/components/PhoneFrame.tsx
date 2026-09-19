@@ -52,26 +52,26 @@ export default function PhoneFrame({ size, onSize, children }: { size: ScreenSiz
       <aside className="side">
         <h1>Mizani</h1>
         <p>
-          A bargaining co-pilot for keypad phones at the Busia border (Kenya–Uganda): check the price, do the
-          money maths, judge the other side&apos;s offer, find a better buyer.
+          Clear farm-price information for keypad phones at the Busia border (Kenya–Uganda), with buyer posts
+          that sellers can answer by phone.
         </p>
         <h2>Keys</h2>
         <ul>
-          <li><kbd>1</kbd>–<kbd>9</kbd> pick a crop · type numbers anywhere</li>
-          <li><kbd>↑↓←→</kbd> <kbd>Enter</kbd> move / confirm</li>
+          <li><kbd>↑↓←→</kbd> <kbd>Enter</kbd> choose a product</li>
+          <li><kbd>1</kbd>–<kbd>4</kbd> opens a product action</li>
           <li><kbd>Esc</kbd> or <kbd>Q</kbd> left soft key</li>
           <li><kbd>F12</kbd> or <kbd>W</kbd> right soft key (back / clear)</li>
-          <li><kbd>*</kbd> pin a crop · <kbd>#</kbd> switch KSh / USh</li>
+          <li><kbd>#</kbd> switches KSh / USh on the price screen</li>
         </ul>
         <h2>Screen</h2>
         <button type="button" className="opt" aria-pressed={size === "qv"} onClick={() => onSize("qv")}>QVGA 240×320</button>
         <button type="button" className="opt" aria-pressed={size === "qq"} onClick={() => onSize("qq")}>QQVGA 128×160</button>
         <h2>Try this</h2>
         <ul>
-          <li><kbd>1</kbd> Maize → type <kbd>2</kbd> bags → <kbd>Enter</kbd></li>
-          <li>Type their offer <kbd>4250</kbd>: red light, counter-offer, better buyer</li>
-          <li><kbd>Enter</kbd> → save the deal → the traders&apos; price updates</li>
-          <li><kbd>Esc</kbd> Menu → Where to sell → <kbd>Esc</kbd> Map</li>
+          <li>Choose Maize with the arrows and <kbd>Enter</kbd></li>
+          <li>Press <kbd>1</kbd> for today&apos;s price</li>
+          <li>Press <kbd>2</kbd> for buyers on the map</li>
+          <li>Press <kbd>4</kbd> to publish a three-day buyer post</li>
         </ul>
         <p style={{ marginTop: 14, fontSize: 12, color: "#7f958a" }}>
           Demo data. On a Cloud Phone the app fills the 240×320 screen and this frame is not shown

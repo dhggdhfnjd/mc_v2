@@ -1,47 +1,64 @@
 "use client";
 
-// L3 — one buyer's open demand, reached from a bubble on the map. Ranked elsewhere by what the
-// seller really keeps after transport, because the price and the fare only mean something together.
+// All buyers at the selected market are reachable with Up/Down. The app does not mediate a
+// conversation: it shows the buyer's public number and launches the phone dialler when supported.
 
+import { useMemo } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
-import { Row, useNotice } from "../components/ui";
+import { Row, useListNav } from "../components/ui";
 import { display } from "../core/display";
+import { useFeature } from "../core/features";
 import type { Key } from "../core/keypad";
 import { useSettings } from "../core/settings";
-import { type DemandView } from "../lib/api";
+import { useApi } from "../core/useApi";
+import { getDemands } from "../lib/api";
 import { KES_TO_UGX, commodity, market } from "../lib/catalog";
 import { fmt } from "../lib/money";
 
 export default function DemandDetail({ active, params }: ScreenProps) {
   const { settings, t } = useSettings();
-  const x = params.demand as DemandView;
-  const c = commodity(x.commodityId);
-  const marketId = settings.marketId ?? "busia-ke";
-  const d = display(market(marketId).currency, KES_TO_UGX);
-  const daysLeft = Math.max(1, Math.ceil((x.expiresAt - Date.now()) / 86_400_000));
-  const [notice, show] = useNotice(3200);
+  const commodityId = (params.commodityId as string | undefined) ?? settings.foodId;
+  const selectedMarket = (params.marketId as string | undefined) ?? settings.marketId ?? "busia-ke";
+  const fromId = settings.marketId ?? "busia-ke";
+  const canCall = useFeature("TelScheme");
+  const c = commodity(commodityId);
+  const d = display(market(fromId).currency, KES_TO_UGX);
+  const { data, error } = useApi(`demand-detail.${commodityId}.${fromId}`, () => getDemands(commodityId, fromId), [commodityId, fromId]);
+  const buyers = useMemo(() => (data ?? []).filter((x) => x.marketId === selectedMarket), [data, selectedMarket]);
+  const list = useListNav(buyers.length);
+  const x = buyers[list.index];
 
-  // tel: links need Cloud Phone client 3.1.2+, and the test handset runs 2.5. The dependable
-  // path is a text message from the server, which lands in the inbox where she can dial from.
   const onKey = (key: Key): boolean => {
-    if (key === "LSK" || key === "OK") return show(t("smsDemo")), true;
+    if (list.onKey(key)) return true;
+    if (key === "OK" && x && canCall) {
+      window.location.href = `tel:${x.phone.replace(/\s/g, "")}`;
+      return true;
+    }
     return false;
   };
 
+  if (!x) {
+    return (
+      <Screen active={active} title={market(selectedMarket).name} onKey={onKey}>
+        <div className="mut">{error ? t("netError") : data ? t("noDemand") : "Loading…"}</div>
+      </Screen>
+    );
+  }
+
+  const daysLeft = Math.max(1, Math.ceil((x.expiresAt - Date.now()) / 86_400_000));
   return (
     <Screen
       active={active}
-      title={market(x.marketId).name}
-      sub={`${x.km} km${x.crossesBorder ? " · " + t("crossBorder") : ""}`}
-      soft={{ l: t("smsMe") }}
+      title={market(selectedMarket).name}
+      sub={`${list.index + 1}/${buyers.length} · ${x.km} km`}
+      soft={{ c: canCall ? t("call") : "" }}
       onKey={onKey}
-      notice={notice}
     >
-      <Row l={x.buyer} r={x.kept[1] ? <small>{t("kept")} {x.kept[0]}/{x.kept[1]}</small> : undefined} />
-      <Row mut l={t("wants")} r={`${fmt(x.kg)} kg ${c.en.toLowerCase()}`} />
-      <Row l={t("pays")} r={<>{d.sym} {d.perKg(x.bidC)} /kg</>} />
+      <Row l={x.buyer} r={buyers.length > 1 ? "↑↓" : undefined} />
+      <Row mut l={t("wants")} r={`${fmt(x.kg)} kg ${settings.lang === "sw" ? c.sw.toLowerCase() : c.en.toLowerCase()}`} />
+      <Row l={t("pays")} big r={`${d.sym} ${d.perKg(x.bidC)}/kg`} />
       <Row mut l={t("transport")} r={`− ${d.perKg(x.transportC)}`} />
-      <Row l={<b>{t("youKeep")}</b>} big r={<span className="up">{d.sym} {d.perKg(x.netC)}<small> /kg</small></span>} />
+      <Row l={<b>{t("youKeep")}</b>} r={<span className="up">{d.sym} {d.perKg(x.netC)}/kg</span>} />
       <Row mut l={t("expires")} r={`${daysLeft} ${t("d")}`} />
       <div className="hr" />
       <div className="mut ctr">{t("callHint")}</div>

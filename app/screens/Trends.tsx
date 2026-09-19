@@ -1,7 +1,7 @@
 "use client";
 
 // L2 HISTORY PRICE VIEW — the plain trend for one food. ◀▶ changes the window,
-// the left soft key re-filters by food.
+// the left soft key returns to the product grid.
 
 import { useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
@@ -29,12 +29,12 @@ export function History({ active, params }: ScreenProps) {
 
   const onKey = (key: Key): boolean => {
     if (key === "Left" || key === "Right") return setRi((i) => (i + (key === "Right" ? 1 : RANGES.length - 1)) % RANGES.length), true;
-    if (key === "LSK") return nav.replace("foodin", { then: "history" }), true;
+    if (key === "LSK") return nav.home(), true;
     return false;
   };
 
   return (
-    <Screen active={active} title={`${c.icon} ${t("histPrice")}`} sub={m.name} soft={{ l: t("filter") }} onKey={onKey}>
+    <Screen active={active} title={`${c.icon} ${t("histPrice")}`} sub={m.name} soft={{ l: t("products") }} onKey={onKey}>
       <Row l={<>◀ {days} {t("days").toLowerCase()} ▶</>} r={data ? <span className={data.change >= 0 ? "up" : "dn"}>{data.change >= 0 ? "▲ +" : "▼ "}{(data.change * 100).toFixed(0)}%</span> : undefined} />
       {error ? <div className="vd idle">{t("netError")}</div> : null}
       {data ? (

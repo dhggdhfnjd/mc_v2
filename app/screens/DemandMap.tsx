@@ -29,6 +29,7 @@ interface Bubble {
   r: number;
   best: DemandView;
   kg: number;
+  count: number;
 }
 
 /** nearest bubble inside a 90° cone in the pressed direction */
@@ -64,8 +65,10 @@ export default function DemandMap({ active, params }: ScreenProps) {
     for (const x of data ?? []) {
       const m = market(x.marketId);
       const b = byMarket.get(x.marketId);
-      if (b) b.kg += x.kg; // ranked list: the first one seen per market is its best bid
-      else byMarket.set(x.marketId, { marketId: x.marketId, x: m.x, y: m.y, r: 0, best: x, kg: x.kg });
+      if (b) {
+        b.kg += x.kg;
+        b.count += 1;
+      } else byMarket.set(x.marketId, { marketId: x.marketId, x: m.x, y: m.y, r: 0, best: x, kg: x.kg, count: 1 });
     }
     const all = [...byMarket.values()];
     all.forEach((b) => (b.r = Math.max(9, Math.min(19, 5 + Math.sqrt(b.kg) / 2.6))));
@@ -75,7 +78,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
   const sel = bubbles.find((b) => b.marketId === selId) ?? bubbles[0] ?? null;
 
   const onKey = (key: Key): boolean => {
-    if (key === "LSK") return nav.replace("foodin", { then: "map" }), true;
+    if (key === "LSK") return nav.home(), true;
     if (!sel) return false;
     if (key === "Up" || key === "Down" || key === "Left" || key === "Right") {
       const next = neighbour(sel, bubbles, key);
@@ -87,7 +90,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
       if (hit) setSelId(hit.marketId);
       return true;
     }
-    if (key === "OK") return nav.push("demand", { demand: sel.best }), true;
+    if (key === "OK") return nav.push("demand", { commodityId: c.id, marketId: sel.marketId }), true;
     return false;
   };
 
@@ -96,7 +99,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
     <Screen
       active={active}
       title={`${t("whoWants")} ${(settings.lang === "sw" ? c.sw : c.en).toLowerCase()}?`}
-      soft={{ l: t("filter"), c: t("open") }}
+      soft={{ l: t("products"), c: t("open") }}
       onKey={onKey}
       flush
     >
@@ -132,7 +135,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
       <div style={{ padding: "3px 7px 0" }}>
         {sel ? (
           <>
-            <Row l={<b>{sel.best.rank} {market(sel.marketId).name}</b>} r={`${d.sym} ${d.perKg(sel.best.bidC)}/kg · ${fmt(sel.kg)} kg`} />
+            <Row l={<b>{sel.best.rank} {market(sel.marketId).name}</b>} r={`${sel.count} ${t("buyerPosts")} · ${fmt(sel.kg)} kg`} />
             <Row mut l={`${t("transport")} −${d.perKg(sel.best.transportC)} · ${sel.best.km} km`} r={<span className="up">{t("net")} {d.perKg(localC)}</span>} />
           </>
         ) : (

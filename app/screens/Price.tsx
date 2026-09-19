@@ -3,7 +3,7 @@
 // L2 NOW PRICE VIEW — the two reference prices side by side: the official per-kg price on top,
 // always with its date, and the traders' reported price with confidence bars below.
 // ◀▶ changes the unit so the lot price is read straight off the screen, ▲▼ the grade,
-// # flips to the other currency. The left soft key re-filters by food.
+// # flips to the other currency. The left soft key returns to the product grid.
 
 import { useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
@@ -44,7 +44,7 @@ export default function Price({ active, params }: ScreenProps) {
       case "#":
         return setAltCur((a) => !a), true;
       case "LSK":
-        return nav.replace("foodin", { then: "price" }), true;
+        return nav.home(), true;
       case "OK":
         if (error) reload();
         return true;
@@ -62,7 +62,7 @@ export default function Price({ active, params }: ScreenProps) {
       active={active}
       title={`${c.icon} ${name}`}
       sub={m.name}
-      soft={{ l: t("filter"), c: error ? t("retry") : t("ok") }}
+      soft={{ l: t("products"), c: error ? t("retry") : t("ok") }}
       onKey={onKey}
       notice={staleAt ? `${t("lastUpdated")} ${shortDate(staleAt)}` : null}
     >

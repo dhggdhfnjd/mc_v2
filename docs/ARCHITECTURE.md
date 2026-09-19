@@ -1,68 +1,58 @@
-# Architecture
+# Mizani architecture
 
-The full design — meeting notes, Busia/J-PAL evidence, screen sketches, trust model, system diagram, data model and API — is the "Mizani 系統架構" page: <https://claude.ai/artifact/CVRT1T6Zo8eyZQR7YzyWdH> (private; ask the owner for access). This file is the short version that travels with the code.
+Mizani reduces market-information inequality for small traders around the Kenya–Uganda border.
+The primary job is to answer one question quickly: **what is this product worth?** Buyer posts are
+a secondary discovery aid. Mizani is not a marketplace, chat app, deal book or bargaining tool.
 
-## Menu tree (19 Sep 2026)
+## User flow
 
-The app is a three-level menu. Every option is an icon plus its word on a numbered cell, so the
-same move — look, press a digit — works on every screen.
-
-```
-L1 MAIN MENU
-├─ 1 FOOD ──────▶ L2 food input ─┬─ Photo (lib/vision.ts)  ─┐
-│                                └─ Text  (the crop grid)   ├─▶ L3 FOOD DETAIL
-├─ 2 MAP ───────▶ L2 map view ───────── filter (food) ──────┤   map · now price · history
-├─ 3 NOW PRICE ─▶ L2 price view ─────── filter (food) ──────┤   1/2/3 open the full view
-├─ 4 HISTORY ───▶ L2 history view ───── filter (food) ──────┘
-├─ 5 MY DEAL ───▶ L2 deal list ──▶ L3 deal detail
-└─ 6 SETTING ───▶ L2 setting menu ──▶ L3 language / country
-```
-
-| Node | Screen |
-| --- | --- |
-| L1 main menu | `screens/Home.tsx` |
-| L2 food input method | `screens/FoodInput.tsx` |
-| L2 food by photo | `screens/Photo.tsx`, `lib/vision.ts` |
-| L2 food by text | `screens/FoodPick.tsx` |
-| L2 map view | `screens/DemandMap.tsx`, `lib/catalog.ts#routeCost` |
-| L2 now price view | `screens/Price.tsx`, `lib/api.ts#getPrices` |
-| L2 history price view | `screens/Trends.tsx#History` |
-| L2 my deal list | `screens/Ledger.tsx` |
-| L2 setting menu | `screens/Settings.tsx` |
-| L3 food detail | `screens/FoodDetail.tsx`, `lib/api.ts#getFoodDetail` |
-| L3 demand detail | `screens/DemandDetail.tsx` |
-| L3 deal detail | `screens/DealDetail.tsx` |
-| L3 language / country | `screens/LangCountry.tsx` |
-
-The three filtered views remember the last food (`settings.foodId`), so L1 opens them straight
-away; their left soft key re-enters the food input as the "filter (food)" step.
-
-### What the restructure dropped
-
-The earlier build was organised around the team decisions D1–D15 and had screens for bargaining
-(D4), closing a deal (D5, D12, D13), reporting a price (D11), posting a demand (D7), the demand
-list, the seasonal calendar (D10) and border FX. The menu tree above has no node for them, so
-those screens were removed. `lib/money.ts` and `lib/trust.ts` still hold the fair-band, verdict,
-counter-offer and crowd-screening maths, with their tests, so the flows can be restored on top of
-them. `screens/Area.tsx` became the country half of the L3 language / country screen.
-
-Nothing writes to the ledger any more, so `lib/seed.ts#seedDeals` supplies a week of demo deals
-to keep that branch alive.
-
-## Runtime picture
-
-```
-keypad phone ──keys──▶ CloudMosa cloud browser ──HTTPS JSON, one call per screen──▶ API
-             ◀─draw cmds─   (this Next.js export runs here)                         (in-process today;
-                                                                                    Workers + D1/KV/R2/Queues planned)
+```text
+HOME — products + photo in one paged 3×3 grid (D-pad + OK only)
+  │
+  ├─ Photo ── recognise ── confirm with Up/Down + OK ──┐
+  └─ Product ───────────────────────────────────────────┤
+                                                       ▼
+PRODUCT HUB — 1 Now price · 2 Buyer map · 3 History · 4 I want to buy
+  ├─ Now price: dated official price + sufficiently trusted crowd price
+  ├─ Buyer map: market-level locations only
+  │    └─ Buyer detail: phone number; call outside Mizani
+  ├─ History: 30 / 90 / 365-day trend
+  └─ I want to buy: edit market + quantity + price/kg + phone together → review
+       └─ one active post per product; edit or close; expires after 3 days
 ```
 
-The slow, metered hop is phone ↔ data centre, so the app never animates, never polls, draws with text and SVG, and keeps all arithmetic local after a single fetch.
+Settings is reached by the home left soft key and contains only language and trading area.
 
-## Rules worth keeping
+## Interaction rules
 
-- Money is integer maths in `lib/money.ts`; no model or randomness may enter that path.
-- Counter-offers use reciprocal concession: open just beyond the fair range, give ground only in proportion to how far the other side has come from a lowball toward the market reference, never cross the user's own cost floor or budget.
-- Crowd prices are shown only with ≥ 3 independent reporters and always beside the dated official price.
-- Locations are markets, never addresses: advertising who holds stock or cash invites robbery.
-- Posting a demand needs a phone number (it sends someone on a real journey); reporting a price does not.
+- Home product selection never uses 1–9. The highlight, four arrow keys and OK are the complete
+  interaction model. Photo is a normal first-class cell, not a separate choice screen.
+- The four stable product actions keep 1–4 shortcuts as well as arrows and OK.
+- The buyer-post editor keeps all related values on one page. Up/Down selects a field, digits edit
+  it, Left/Right changes the market, and OK opens the separate review page.
+- Every price says its source/date. All current values are demo values until the live ingest is
+  connected.
+- Buyer locations are market-level only. Exact addresses are never published.
+- A buyer explicitly reviews that their phone will be public for three days. Sellers call that
+  number directly; there is no in-app chat, negotiation or transaction workflow.
+
+## Data boundaries
+
+- Official and accepted crowd reports feed price statistics.
+- A buyer's intended price is stored only in `demands`; it is **not** a completed transaction and
+  must never be added to the market-price statistic.
+- Money crossing module boundaries is integer KES cents per kg (`priceC` / `bidC`). Conversion to
+  KES or UGX happens only for display and typed input.
+- Local prototype data uses the `mz.v2.*` namespace. A future API can replace the Promise-returning
+  functions in `app/lib/api.ts` without changing screens.
+
+## Runtime constraints
+
+```text
+keypad phone ── keys ──▶ CloudMosa cloud browser ── HTTPS JSON ──▶ API
+             ◀─ draw commands ────────────────────────────────────
+```
+
+The phone link is slow and metered, so screens do not animate or poll, SVG replaces map tiles,
+and a screen performs at most one read request. QVGA (240×320) and QQVGA (128×160) remain the
+supported layouts.

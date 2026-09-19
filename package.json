@@ -2,7 +2,7 @@
   "name": "mizani",
   "version": "0.1.0",
   "private": true,
-  "description": "Mizani \u2014 farm-price bargaining co-pilot for Cloud Phone keypad phones (Busia, Kenya\u2013Uganda border).",
+  "description": "Mizani \u2014 clear farm prices and buyer posts for Cloud Phone keypad phones.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
