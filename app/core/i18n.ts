@@ -50,7 +50,7 @@ const en = {
   working: "…",
   userInvalid: "Name: 3–16 a–z 0–9 . _ -", userTaken: "That name is taken",
   passShort: "Password: 4+ characters", passMatch: "The two do not match",
-  wrongLogin: "Wrong name or password", needSignIn: "Sign in first",
+  wrongLogin: "Wrong name or password", needSignIn: "Sign in first", badPost: "Check the post and try again",
 } as const;
 
 type Dict = Record<keyof typeof en, string>;
@@ -97,7 +97,7 @@ const sw: Dict = {
   textHint: "* abc/123 · ↑↓ sehemu · ⌫",
   userInvalid: "Jina: herufi 3–16", userTaken: "Jina limetumika",
   passShort: "Nenosiri: herufi 4+", passMatch: "Hazifanani",
-  wrongLogin: "Jina au nenosiri si sahihi", needSignIn: "Ingia kwanza",
+  wrongLogin: "Jina au nenosiri si sahihi", needSignIn: "Ingia kwanza", badPost: "Kagua tangazo, jaribu tena",
 };
 
 const DICTS: Record<Lang, Dict> = { en, sw };

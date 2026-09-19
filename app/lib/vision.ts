@@ -8,7 +8,8 @@
 //                         runs in CloudMosa's data centre, so neither the 23 MB model nor the
 //                         inference costs the handset any data or CPU.
 //   2. HttpRecognizer   — same contract over POST /v1/recognize (server/ in this repo), used when
-//                         NEXT_PUBLIC_API_BASE is set.
+//                         NEXT_PUBLIC_VISION_BASE is set. Its own variable: NEXT_PUBLIC_API_BASE is
+//                         the account Worker, which has no /v1/recognize.
 //   3. ColourRecognizer — a colour histogram. Only a last resort when the model cannot load.
 //
 // Why not YOLO: stock YOLO knows the 80 COCO classes (banana, broccoli, carrot…) and none of
@@ -329,7 +330,7 @@ export class WithFallback implements VisionProvider {
 }
 
 export function visionProvider(): VisionProvider {
-  const api = process.env.NEXT_PUBLIC_API_BASE;
+  const api = process.env.NEXT_PUBLIC_VISION_BASE;
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   return new WithFallback(api ? new HttpRecognizer(api) : new ClipRecognizer(base), new ColourRecognizer());
 }

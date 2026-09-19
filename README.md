@@ -22,7 +22,7 @@ cd worker && npm install && npm run db:init && npm run dev   # http://127.0.0.1:
 NEXT_PUBLIC_API_BASE=http://127.0.0.1:8787 npm run dev       # in the repository root
 ```
 
-Without `NEXT_PUBLIC_API_BASE` the app keeps the same `users` schema in the handset's own storage,
+Without `NEXT_PUBLIC_API_BASE` the app keeps the same `users` and `demands` schema in the handset's own storage,
 so a demo runs with no backend — but the account then exists on that one phone only.
 
 Open <http://localhost:3000>. Desktop shows a clickable phone frame; viewports up to 330 px use the

@@ -83,8 +83,12 @@ jobs:
         NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
         # optional: without it the demand map uses the SVG schematic instead of Google Static Maps
         NEXT_PUBLIC_GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
-        # the deployed worker/ URL; without it accounts stay on the handset that created them
+        # the deployed worker/ URL; without it accounts and buyer posts stay on the handset that
+        # created them
         NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}
+        # optional: the deployed server/ URL for photo recognition; without it the model runs in
+        # the page. Not the Worker: it has no /v1/recognize.
+        NEXT_PUBLIC_VISION_BASE: ${{ vars.VISION_BASE }}
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4

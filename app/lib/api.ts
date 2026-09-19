@@ -6,6 +6,7 @@
 import { hashPassword, newSalt, newToken, normalizeUsername, validatePassword, validateUsername, verifyPassword, type AuthCode } from "./auth";
 import { COMMODITIES, MARKETS, commodity, market, routeCost } from "./catalog";
 import { netPriceC } from "./money";
+import { validateDemand, type DemandInput } from "./demand";
 import { seedDemands } from "./seed";
 import type { Account, Demand, Session } from "./types";
 import { wfpSeries } from "./wfp";
@@ -42,12 +43,12 @@ export const getNetwork = () => network;
 
 export class ApiError extends Error {
   /** an AuthCode or "netError": the screen translates it instead of printing this message */
-  constructor(message: string, readonly code?: AuthCode | "netError") {
+  constructor(message: string, readonly code?: AuthCode | "badPost" | "netError") {
     super(message);
   }
 }
 
-async function call<T>(fn: () => T): Promise<T> {
+async function call<T>(fn: () => T | Promise<T>): Promise<T> {
   if (network === "down" || (network === "flaky" && Math.random() < 0.5)) {
     throw new ApiError("Network problem");
   }
@@ -55,7 +56,8 @@ async function call<T>(fn: () => T): Promise<T> {
 }
 
 // ---------- accounts ----------
-// With NEXT_PUBLIC_API_BASE set, these four calls are the Cloudflare Worker in worker/ and the
+// With NEXT_PUBLIC_API_BASE set, these calls (and the buyer posts below) are the Cloudflare Worker
+// in worker/ and the
 // account lives in the D1 `users` table, so the same name works on any handset. Without it the
 // same schema is kept in this phone's own storage, which is what a judge sees in an offline demo
 // and what the unit tests run against.
@@ -86,7 +88,7 @@ async function callApi(path: string, init: RequestInit): Promise<unknown> {
     throw new ApiError("Network problem", "netError");
   }
   if (res.status === 204) return null;
-  const data = (await res.json().catch(() => ({}))) as { error?: AuthCode };
+  const data = (await res.json().catch(() => ({}))) as { error?: AuthCode | "badPost" };
   if (!res.ok) throw new ApiError(data.error ?? "Network problem", data.error ?? "netError");
   return data;
 }
@@ -275,14 +277,29 @@ function historyOf(commodityId: string, months: number): HistoryData {
 /** Monthly WFP history; missing months remain null instead of being interpolated. */
 export const getHistory = (commodityId: string, months: number) => call(() => historyOf(commodityId, months));
 
-function openDemands(commodityId: string, now: number): Demand[] {
-  const mine = read<Demand[]>("demands", [])
+function localDemands(commodityId: string): Demand[] {
+  return read<Demand[]>("demands", [])
     // Old demo releases used invented border markets. Never place those posts at a fallback
     // coordinate: only posts tied to one of the actual WFP markets may reach the map.
     .filter((d) => d.commodityId === commodityId && VALID_MARKET_IDS.has(d.marketId))
     // posts written before accounts existed still have to render
     .map((d) => ({ ...d, username: d.username || currentSession()?.username || "me" }));
-  return [...mine, ...seedDemands(commodityId, now)].filter((d) => d.expiresAt > now);
+}
+
+const bearer = (session: Session) => ({ Authorization: `Bearer ${session.token}` });
+
+/** The server has no notion of "mine"; it is whoever is signed in on this handset. */
+const own = (d: Demand): Demand => ({ ...d, mine: d.username === currentSession()?.username });
+
+async function remoteDemands(commodityId: string): Promise<Demand[]> {
+  const { demands } = (await callApi(`/v1/demands?c=${encodeURIComponent(commodityId)}`, { method: "GET" })) as { demands: Demand[] };
+  return demands.filter((d) => VALID_MARKET_IDS.has(d.marketId)).map(own);
+}
+
+/** Real posts (the Worker, or this handset's store offline) plus the labelled demo buyers. */
+async function openDemands(commodityId: string, now: number): Promise<Demand[]> {
+  const real = usingRemoteAccounts() ? await remoteDemands(commodityId) : localDemands(commodityId);
+  return [...real, ...seedDemands(commodityId, now)].filter((d) => d.expiresAt > now);
 }
 
 export interface DemandView extends Demand {
@@ -293,47 +310,60 @@ export interface DemandView extends Demand {
   rank: number;
 }
 
-function demandsOf(commodityId: string, fromId: string): DemandView[] {
-  {
-    const now = Date.now();
-    return openDemands(commodityId, now)
-      .map((d) => {
-        const r = routeCost(fromId, d.marketId, commodityId);
-        return {
-          ...d,
-          netC: netPriceC(d.bidC, r.transportC, r.borderC, r.lossRate),
-          km: r.km,
-          crossesBorder: r.crossesBorder,
-          transportC: r.transportC + r.borderC,
-          rank: 0,
-        };
-      })
-      .sort((a, b) => b.netC - a.netC)
-      .map((d, i) => ({ ...d, rank: i + 1 }));
-  }
+async function demandsOf(commodityId: string, fromId: string): Promise<DemandView[]> {
+  const now = Date.now();
+  return (await openDemands(commodityId, now))
+    .map((d) => {
+      const r = routeCost(fromId, d.marketId, commodityId);
+      return {
+        ...d,
+        netC: netPriceC(d.bidC, r.transportC, r.borderC, r.lossRate),
+        km: r.km,
+        crossesBorder: r.crossesBorder,
+        transportC: r.transportC + r.borderC,
+        rank: 0,
+      };
+    })
+    .sort((a, b) => b.netC - a.netC)
+    .map((d, i) => ({ ...d, rank: i + 1 }));
 }
 
-/** GET /v1/demands?c&from — ranked by what the seller really keeps, not by the headline bid */
+/** GET /v1/demands?c — ranked here by what the seller really keeps, not by the headline bid */
 export const getDemands = (commodityId: string, fromId: string) =>
   call(() => demandsOf(commodityId, fromId));
 
 // ---------- buyer posts ----------
+/** GET /v1/demands/mine?c */
 export const getMyDemand = (commodityId: string) =>
-  call(() => read<Demand[]>("demands", []).find((d) => d.commodityId === commodityId && VALID_MARKET_IDS.has(d.marketId) && d.expiresAt > Date.now()) ?? null);
+  call(async () => {
+    const session = currentSession();
+    if (usingRemoteAccounts()) {
+      if (!session) return null;
+      const { demand } = (await callApi(`/v1/demands/mine?c=${encodeURIComponent(commodityId)}`, { method: "GET", headers: bearer(session) })) as { demand: Demand | null };
+      return demand && own(demand);
+    }
+    return read<Demand[]>("demands", []).find((d) => d.commodityId === commodityId && VALID_MARKET_IDS.has(d.marketId) && d.expiresAt > Date.now()) ?? null;
+  });
 
-/** One active post per commodity. Re-posting edits and renews it for three days. */
-export const postDemand = (input: { commodityId: string; marketId: string; kg: number; bidC: number; days: number; phone: string }) =>
-  call(() => {
+/** POST /v1/demands — one active post per commodity. Re-posting edits and renews it for three days. */
+export const postDemand = (input: DemandInput) =>
+  call(async () => {
     const session = currentSession();
     // a post is signed: the map shows who is buying, so there is no such thing as an anonymous one
     if (!session) throw new ApiError("needSignIn", "needSignIn");
+    const bad = validateDemand(input);
+    if (bad) throw new ApiError(bad, bad);
+    if (usingRemoteAccounts()) {
+      const { demand } = (await callApi("/v1/demands", { method: "POST", headers: bearer(session), body: JSON.stringify(input) })) as { demand: Demand };
+      return own(demand);
+    }
     const now = Date.now();
     const existing = read<Demand[]>("demands", []);
     const old = existing.find((x) => x.commodityId === input.commodityId && x.mine);
     const d: Demand = {
       id: old?.id ?? `my-${now}`,
       username: session.username,
-      buyer: "You",
+      buyer: "",
       phone: input.phone,
       commodityId: input.commodityId,
       marketId: input.marketId,
@@ -347,8 +377,15 @@ export const postDemand = (input: { commodityId: string; marketId: string; kg: n
     return d;
   });
 
+/** POST /v1/demands/close */
 export const closeDemand = (id: string) =>
-  call(() => {
+  call(async () => {
+    const session = currentSession();
+    if (usingRemoteAccounts()) {
+      if (!session) throw new ApiError("needSignIn", "needSignIn");
+      await callApi("/v1/demands/close", { method: "POST", headers: bearer(session), body: JSON.stringify({ id }) });
+      return true;
+    }
     write("demands", read<Demand[]>("demands", []).filter((d) => d.id !== id));
     return true;
   });
