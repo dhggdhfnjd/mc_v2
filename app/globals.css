@@ -88,6 +88,18 @@ body {
   font-size: calc(var(--fs) + 4px); font-weight: 700; color: #fff; text-align: right;
 }
 .inp.on { border-color: var(--foc); }
+
+/* text field: label above a full-width box, current multi-tap mode printed on the right */
+.tf { flex: none; }
+.tf > small { color: var(--mut); font-size: var(--fs-s); }
+.tf.on > small { color: var(--foc); }
+.inp.txt { display: flex; align-items: center; gap: 1px; width: 100%; min-width: 0; text-align: left; font-size: var(--fs); letter-spacing: 1px; min-height: calc(var(--fs) + 9px); }
+.inp.txt > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tf.on .inp { border-color: var(--foc); }
+/* a solid block, not a blinking one: every repaint is metered mobile data */
+.inp.txt u { flex: none; width: 2px; height: calc(var(--fs) - 1px); background: var(--foc); text-decoration: none; }
+.inp.txt b { margin-left: auto; padding-left: 5px; color: var(--mut); font-size: var(--fs-s); font-weight: 400; letter-spacing: 0; }
+.qq .inp.txt { font-size: var(--fs-s); min-height: calc(var(--fs) + 5px); }
 .qq .inp { min-width: 4.4em; font-size: calc(var(--fs) + 2px); padding: 0 3px; border-width: 1px; }
 .qq .vd { padding: 1px 3px; }
 

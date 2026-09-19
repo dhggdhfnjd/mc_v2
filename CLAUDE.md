@@ -8,6 +8,7 @@ Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, price
 - `npm test` – Vitest unit tests for `app/lib/money.ts` and `app/lib/trust.ts`
 - `npm run typecheck` / `npm run lint`
 - `npm run build` – static export to `out/` (set `NEXT_PUBLIC_BASE_PATH=/<repo>` for GitHub Pages)
+- `worker/` is the account API (Cloudflare Worker + D1): `npm run db:init`, `npm run dev`, `npm run typecheck` from that directory. Point the app at it with `NEXT_PUBLIC_API_BASE`.
 
 ## Platform rules (from the official Cloud Phone docs and the Meichu demo repo)
 
@@ -21,7 +22,8 @@ Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, price
 ## Architecture
 
 - `app/lib/` – pure domain code, no React: `money.ts` (integer money maths, fair band, verdict, counter-offer), `trust.ts` (crowd-price gates, weighted median, confidence), `catalog.ts`, `seed.ts` (deterministic demo data), `api.ts` (Promise API that mirrors the planned REST endpoints; in-process for now), `vision.ts` (photo → crop: MobileCLIP-S0 zero-shot in the page via ONNX Runtime Web, the same model over HTTP from `server/`, colour histogram as last resort; label table built by `tools/vision/build_label_embeddings.py`).
-- `app/core/` – platform layer: `keypad.ts`, `keys.tsx` (key bus), `router.tsx` (screen stack on the History API so the RSK default `history.back()` pops one screen), `features.ts`, `settings.tsx`, `useApi.ts` (last-good cache fallback), `i18n.ts`, `display.ts`.
+- `app/core/` – platform layer: `keypad.ts`, `textentry.ts` (multi-tap alphabet; `<input>` never sends keydown on Cloud Phone), `keys.tsx` (key bus), `router.tsx` (screen stack on the History API so the RSK default `history.back()` pops one screen; its root is a prop, and signing in or out remounts it), `session.tsx`, `features.ts`, `settings.tsx`, `useApi.ts` (last-good cache fallback), `errors.ts`, `i18n.ts`, `display.ts`.
+- `worker/` – the account API: one Worker over D1 (SQLite). `users.username` is the primary key and the identity shown on the buyer map; `app/lib/auth.ts` is imported by both the browser and the Worker so there is one KDF (PBKDF2-SHA256) and one set of validation rules.
 - `app/screens/` – one screen per node of the menu tree; registry in `index.ts`.
 - `app/components/` – `Screen` (header/body/soft keys + key registration), `ui` (`Grid`/`useGridNav` for the icon menus, Row, Field, Bars, Spark), `PhoneFrame` (desktop only).
 
@@ -29,7 +31,8 @@ Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, price
 
 - Every menu option is an icon plus its word in a numbered cell (`Grid`), never a bare text row: one look, one digit.
 - Internal prices are KES cents per kg (`*C`); totals are whole KES; convert only at the display edge (`core/display.ts`).
-- No LLM or randomness in money paths. Anything that changes `money.ts` or `trust.ts` needs a test.
+- No LLM or randomness in money paths. Anything that changes `money.ts`, `trust.ts` or `auth.ts` needs a test.
+- Signed out, the app is the login screen and nothing else: a buyer post carries the account's name, so there is no anonymous mode. API errors travel as the `AuthCode` names, which are also i18n keys.
 - Keep strings short (≈26 characters per line at 240 px). Kiswahili strings need native review.
 - All prices in the prototype are demo data; say so wherever numbers are shown to judges.
 - `public/ort/` is copied from `node_modules` by `scripts/copy-ort.mjs` on install and is git-ignored; `public/models/*.onnx` is committed. Do not switch to the Hub's int8 model: it scores 0% (measured).

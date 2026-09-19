@@ -227,8 +227,12 @@ export default function DemandMap({ active, params }: ScreenProps) {
       <div style={{ padding: "3px 7px 0" }}>
         {sel ? (
           <>
-            <Row l={<b>{sel.best.rank} {market(sel.marketId).name}</b>} r={`${sel.count} ${t("buyerPosts")} · ${fmt(sel.kg)} kg`} />
-            <Row mut l={`${t("transport")} −${d.perKg(sel.best.transportC)} · ${sel.best.km} km`} r={<span className="up">{t("net")} {d.perKg(localC)}</span>} />
+            {/* a post is signed: the account that wants the crop, not just a price on a bubble */}
+            <Row l={<b>{sel.best.rank} {market(sel.marketId).name}</b>} r={`@${sel.best.username}`} />
+            <Row mut l={`${sel.count} ${t("buyerPosts")} · ${fmt(sel.kg)} kg`} r={<span className="up">{t("net")} {d.perKg(localC)}</span>} />
+            <div className="only-qv">
+              <Row mut l={`${t("transport")} −${d.perKg(sel.best.transportC)} · ${sel.best.km} km`} />
+            </div>
           </>
         ) : (
           <div className="mut">{!data ? "Loading…" : showAll ? t("noDemand") : `${t("noBuyersNear")} ${RADIUS_KM} km`}</div>

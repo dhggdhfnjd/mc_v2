@@ -82,6 +82,9 @@ export interface Band {
 
 export interface Demand {
   id: string;
+  /** the account that posted it — the identity shown on the buyer map */
+  username: string;
+  /** what kind of business the buyer is ("Hotel kitchen"), for context under the name */
   buyer: string;
   phone: string;
   commodityId: string;
@@ -93,4 +96,19 @@ export interface Demand {
   expiresAt: number;
   createdAt: number;
   mine?: boolean;
+}
+
+/** One row of the `users` table (worker/schema.sql). `password` is a digest, never a password. */
+export interface Account {
+  username: string;
+  password: string;
+  salt: string;
+  createdAt: number;
+}
+
+/** What the phone keeps after signing in: one row of `sessions`, minus the bits it cannot use. */
+export interface Session {
+  username: string;
+  token: string;
+  expiresAt: number;
 }

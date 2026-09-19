@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import PhoneFrame, { type ScreenSize } from "./components/PhoneFrame";
 import { KeyProvider } from "./core/keys";
 import { RouterProvider, useNav, type Route } from "./core/router";
+import { SessionProvider, useSession } from "./core/session";
 import { SettingsProvider } from "./core/settings";
 import { SCREENS } from "./screens";
 
@@ -22,6 +23,30 @@ function ScreenHost() {
         );
       })}
     </>
+  );
+}
+
+/**
+ * Signed out, the app is the login tree; signed in, it is the menu tree. The `key` is what makes
+ * that a swap rather than a navigation: the router unmounts, so the back key can never walk from
+ * Home into Login, and signing out cannot leave a screen of the previous account on the stack.
+ */
+function AppTree({ mode, onSize }: { mode: Mode; onSize: (size: ScreenSize) => void }) {
+  const { user } = useSession();
+  return (
+    <RouterProvider key={user ? "in" : "out"} root={user ? "home" : "login"}>
+      <KeyProvider>
+        {mode.bare ? (
+          <div className={`mz bare ${mode.size}`}>
+            <ScreenHost />
+          </div>
+        ) : (
+          <PhoneFrame size={mode.size} onSize={onSize}>
+            <ScreenHost />
+          </PhoneFrame>
+        )}
+      </KeyProvider>
+    </RouterProvider>
   );
 }
 
@@ -55,19 +80,9 @@ export default function App() {
 
   return (
     <SettingsProvider>
-      <RouterProvider>
-        <KeyProvider>
-          {mode.bare ? (
-            <div className={`mz bare ${mode.size}`}>
-              <ScreenHost />
-            </div>
-          ) : (
-            <PhoneFrame size={mode.size} onSize={(size) => setMode({ bare: false, size })}>
-              <ScreenHost />
-            </PhoneFrame>
-          )}
-        </KeyProvider>
-      </RouterProvider>
+      <SessionProvider>
+        <AppTree mode={mode} onSize={(size) => setMode({ bare: false, size })} />
+      </SessionProvider>
     </SettingsProvider>
   );
 }

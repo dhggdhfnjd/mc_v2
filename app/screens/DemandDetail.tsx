@@ -54,7 +54,9 @@ export default function DemandDetail({ active, params }: ScreenProps) {
       soft={{ c: canCall ? t("call") : "" }}
       onKey={onKey}
     >
-      <Row l={x.buyer} r={buyers.length > 1 ? "↑↓" : undefined} />
+      {/* the account is the identity; what kind of business it is only adds context */}
+      <Row l={<b>@{x.username}</b>} r={buyers.length > 1 ? "↑↓" : undefined} />
+      <Row mut l={x.buyer} />
       <Row mut l={t("wants")} r={`${fmt(x.kg)} kg ${settings.lang === "sw" ? c.sw.toLowerCase() : c.en.toLowerCase()}`} />
       <Row l={t("pays")} big r={`${d.sym} ${d.perKg(x.bidC)}/kg`} />
       <Row mut l={t("transport")} r={`− ${d.perKg(x.transportC)}`} />

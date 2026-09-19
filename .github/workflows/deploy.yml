@@ -33,6 +33,27 @@ jobs:
     - name: Unit tests (money + trust engines)
       run: npm test
 
+  # The account API is its own package with its own tsconfig and Workers globals, so it is checked
+  # on its own. Deploying it is `wrangler deploy` from worker/ and is not part of the Pages route.
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm install --no-audit --no-fund
+      working-directory: worker
+
+    - name: Typecheck the account API
+      run: npm run typecheck
+      working-directory: worker
+
   build-and-deploy:
     needs: test
     if: github.event_name == 'push'
@@ -62,6 +83,8 @@ jobs:
         NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
         # optional: without it the demand map uses the SVG schematic instead of Google Static Maps
         NEXT_PUBLIC_GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
+        # the deployed worker/ URL; without it accounts stay on the handset that created them
+        NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4

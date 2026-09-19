@@ -20,6 +20,8 @@ const eslintConfig = [
       "public/sw.js",
       "public/ort/**",
       "next-env.d.ts",
+      // its own package, its own tsconfig and Workers globals
+      "worker/**",
     ],
   },
 ];

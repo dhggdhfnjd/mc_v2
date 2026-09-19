@@ -8,7 +8,9 @@ import Screen, { type ScreenProps } from "../components/Screen";
 import { Field, Hr, Row, useListNav, useNotice } from "../components/ui";
 import { display } from "../core/display";
 import { isDigit, type Key, typeDigit } from "../core/keypad";
+import { errorKey } from "../core/errors";
 import { useNav } from "../core/router";
+import { useSession } from "../core/session";
 import { useSettings } from "../core/settings";
 import { closeDemand, getMyDemand, postDemand } from "../lib/api";
 import { KES_TO_UGX, MARKETS, commodity, market } from "../lib/catalog";
@@ -20,6 +22,7 @@ const FIELD_COUNT = 4;
 export default function DemandPost({ active, params }: ScreenProps) {
   const nav = useNav();
   const { settings, update, t } = useSettings();
+  const { user } = useSession();
   const c = commodity((params.commodityId as string | undefined) ?? settings.foodId);
   const startMarket = Math.max(0, MARKETS.findIndex((m) => m.id === (settings.marketId ?? "busia-ke")));
   const [marketIdx, setMarketIdx] = useState(startMarket);
@@ -64,14 +67,21 @@ export default function DemandPost({ active, params }: ScreenProps) {
   };
 
   const save = async () => {
-    const saved = await postDemand({
-      commodityId: c.id,
-      marketId: m.id,
-      kg: Number(kg),
-      bidC: Math.round(money.toKes(Number(price)) * 100),
-      days: DAYS,
-      phone,
-    });
+    let saved;
+    try {
+      saved = await postDemand({
+        commodityId: c.id,
+        marketId: m.id,
+        kg: Number(kg),
+        bidC: Math.round(money.toKes(Number(price)) * 100),
+        days: DAYS,
+        phone,
+      });
+    } catch (e) {
+      // the post carries a name, so it cannot be written without a session
+      show(t(errorKey(e)));
+      return;
+    }
     update({ phone, marketId: m.id });
     setExisting(saved);
     setEditing(false);
@@ -186,6 +196,7 @@ export default function DemandPost({ active, params }: ScreenProps) {
           <Row l={t("quantity")} r={`${kg} kg`} />
           <Row l={t("pricePerKg")} r={`${money.sym} ${price}/kg`} />
           <Row l={t("phone")} r={phone} />
+          <Row mut l={t("postingAs")} r={`@${user}`} />
           <Hr />
           <div className="vd fair ctr">{t("publicPhone")}</div>
         </>

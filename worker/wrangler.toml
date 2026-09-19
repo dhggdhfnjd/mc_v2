@@ -1,0 +1,19 @@
+# Mizani account API. Deploy:
+#   npx wrangler d1 create mizani            # once, then paste database_id below
+#   npx wrangler d1 execute mizani --remote --file=./schema.sql
+#   npx wrangler deploy
+name = "mizani-api"
+main = "src/index.ts"
+compatibility_date = "2025-07-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mizani"
+# `wrangler d1 create mizani` prints this; local development works without it.
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[vars]
+# Comma-separated browser origins allowed to call this API. The Cloud Phone widget is served from
+# GitHub Pages, so it is a cross-origin caller and needs to be listed here.
+ALLOWED_ORIGINS = "http://localhost:3000,http://localhost:3100"

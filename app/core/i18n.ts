@@ -37,6 +37,17 @@ const en = {
   fromWhere: "From where?", myLocation: "My location", pickCity: "Choose city",
   coords: "Coordinates", latitude: "Latitude", longitude: "Longitude", coordHint: "* = decimal point · # = minus",
   checkNumbers: "Check the numbers", noBuyersNear: "No buyers within", wholeMap: "Whole map",
+  // accounts: every AuthCode in lib/auth.ts is a key here, so the API can answer in any language
+  // a symbol, not a word, so it reads the same in every language (matches back "↩", ok "✓")
+  del: "⌫",
+  signIn: "Sign in", register: "Register", username: "Name", password: "Password", repeatPass: "Repeat",
+  account: "Account", signOut: "Sign out", signOutAsk: "Sign out?", newAccount: "New account",
+  postedBy: "Posted by", postingAs: "Posting as", buyerName: "Buyer",
+  textHint: "* abc/123 · ↑↓ field · ⌫",
+  working: "…",
+  userInvalid: "Name: 3–16 a–z 0–9 . _ -", userTaken: "That name is taken",
+  passShort: "Password: 4+ characters", passMatch: "The two do not match",
+  wrongLogin: "Wrong name or password", needSignIn: "Sign in first",
 } as const;
 
 type Dict = Record<keyof typeof en, string>;
@@ -74,6 +85,13 @@ const sw: Dict = {
   fromWhere: "Kutoka wapi?", myLocation: "Mahali pangu", pickCity: "Chagua mji",
   coords: "Viwianishi", latitude: "Latitudo", longitude: "Longitudo", coordHint: "* = nukta · # = hasi",
   checkNumbers: "Kagua namba", noBuyersNear: "Hakuna wanunuzi ndani ya", wholeMap: "Ramani yote",
+  signIn: "Ingia", register: "Jisajili", username: "Jina", password: "Nenosiri", repeatPass: "Rudia",
+  account: "Akaunti", signOut: "Toka", signOutAsk: "Utoke?", newAccount: "Akaunti mpya",
+  postedBy: "Ametuma", postingAs: "Unatuma kama", buyerName: "Mnunuzi",
+  textHint: "* abc/123 · ↑↓ sehemu · ⌫",
+  userInvalid: "Jina: herufi 3–16", userTaken: "Jina limetumika",
+  passShort: "Nenosiri: herufi 4+", passMatch: "Hazifanani",
+  wrongLogin: "Jina au nenosiri si sahihi", needSignIn: "Ingia kwanza",
 };
 
 const DICTS: Record<Lang, Dict> = { en, sw };

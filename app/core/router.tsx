@@ -7,13 +7,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { isCloudPhone } from "./features";
 
-/** L1 main menu, the L2 views it opens, and the L3 details under them — see docs/ARCHITECTURE.md */
+/** L1 main menu, the L2 views it opens, and the L3 details under them — see docs/ARCHITECTURE.md.
+ *  "login" and "register" are the signed-out tree and are never pushed from the signed-in one. */
 export type ScreenName =
   | "home"
   | "photo" | "food"
   | "map" | "price" | "history" | "post"
   | "demand" | "settings" | "langsel"
-  | "where" | "near" | "coords";
+  | "where" | "near" | "coords"
+  | "login" | "register";
 
 export type Params = Record<string, unknown>;
 
@@ -34,8 +36,11 @@ interface Nav {
 
 const NavContext = createContext<Nav | null>(null);
 
-export function RouterProvider({ children }: { children: ReactNode }) {
-  const [stack, setStack] = useState<Route[]>([{ id: 0, name: "home", params: {} }]);
+export function RouterProvider({ children, root = "home" }: { children: ReactNode; root?: ScreenName }) {
+  // The root is a prop because signing in and out swaps the whole tree: one router rooted at
+  // "login", one at "home". Remounting is what clears the stack, so neither can be reached from
+  // the other with the back key.
+  const [stack, setStack] = useState<Route[]>(() => [{ id: 0, name: root, params: {} }]);
   const stackRef = useRef(stack);
   stackRef.current = stack;
   const nextId = useRef(1);

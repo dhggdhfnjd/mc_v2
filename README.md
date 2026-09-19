@@ -14,11 +14,27 @@ npm install
 npm run dev
 ```
 
+Accounts need the API in [`worker/`](worker/README.md) — a Cloudflare Worker over a D1 (SQLite)
+database:
+
+```bash
+cd worker && npm install && npm run db:init && npm run dev   # http://127.0.0.1:8787
+NEXT_PUBLIC_API_BASE=http://127.0.0.1:8787 npm run dev       # in the repository root
+```
+
+Without `NEXT_PUBLIC_API_BASE` the app keeps the same `users` schema in the handset's own storage,
+so a demo runs with no backend — but the account then exists on that one phone only.
+
 Open <http://localhost:3000>. Desktop shows a clickable phone frame; viewports up to 330 px use the
 handset layout. `?bare=1` forces full screen and `?size=qq` forces QQVGA.
 
 ## Current flow
 
+0. Sign in, or register from the left soft key. A buyer post is published under a name, so there
+   is no anonymous mode: signed out, the widget is the login screen and nothing else. Names and
+   passwords are typed with the multi-tap alphabet — press `2` twice for "b", `*` switches
+   abc/ABC/123, backspace deletes. The password field opens on digits, because a four-press PIN
+   is what a keypad actually invites.
 1. Home shows Photo and all products in the same paged 3×3 grid.
 2. Choose a product with the four arrow keys and OK. Digits intentionally do nothing here.
 3. The product hub offers four stable actions:
@@ -29,7 +45,9 @@ handset layout. `?bare=1` forces full screen and `?size=qq` forces QQVGA.
 4. A buyer edits market, quantity, price per kg and phone together, then opens a separate review
    page. The post expires after three days and can be edited or closed.
 5. A seller opens a market bubble, cycles through buyers with Up/Down, and calls the displayed
-   number directly. Mizani has no chat, negotiation or transaction workflow.
+   number directly. Mizani has no chat, negotiation or transaction workflow. The map and the buyer
+   detail both name the account behind the post (`@amina_k`), so a seller can recognise a buyer
+   they have dealt with before.
 6. The buyer map opens on **50 km around your location** and only buyers inside that circle get
    bubbles; `* +N > 50 km` counts the rest and `*` toggles the whole corridor.
 7. Your location can be set three ways, all from the buyer map's `0` "From where?":
@@ -56,9 +74,26 @@ chosen city is used and the screen says so.
 Settings is the home left soft key and contains only Language and Coordinates. On price/history/map
 screens, the left soft key returns directly to Products.
 
+## Accounts and the database
+
+`worker/` is a Cloudflare Worker in front of **D1**, Cloudflare's serverless SQLite. Two tables
+(`worker/schema.sql`):
+
+| table | key | holds |
+| --- | --- | --- |
+| `users` | `username` **PRIMARY KEY** | `password` (a PBKDF2-SHA256 digest, never the password), `salt`, `created_at` |
+| `sessions` | `token` | `username` → `users`, `created_at`, `expires_at` |
+
+`username` is the primary key because it is also the public identity on the buyer map: uniqueness
+belongs to the data rather than to a check the application must remember to run. Hashing and
+validation live in `app/lib/auth.ts`, which both the browser and the Worker import, so a password
+is hashed exactly one way. Full routes and deployment steps: [`worker/README.md`](worker/README.md).
+
 ## Important product rules
 
 - Official prices are always dated; crowd prices appear only when there is sufficient evidence.
+- A buyer post is signed. It carries the username of the account that wrote it, and it cannot be
+  published without a session.
 - Buyer-post prices never enter the market-price statistic because an intention to buy is not a
   completed market transaction.
 - Buyer locations are market-level, never exact addresses.
@@ -75,6 +110,8 @@ prototype and are retained only as research history until their screenshots are 
 | Key | Action |
 | --- | --- |
 | `↑ ↓ ← →`, `Enter` | move and confirm; the only product-selection method on Home |
+| `2`–`9` | sign-in and register: multi-tap letters (press `2` twice for "b") |
+| `*` | sign-in and register: switch abc / ABC / 123 |
 | `1`–`4` | product-hub shortcut; digits type values inside forms |
 | `0` | buyer map: set your location (GPS, city or coordinates) |
 | `*` | buyer map: 50 km view ↔ whole corridor |
@@ -95,9 +132,10 @@ npm run build
 
 ```text
 app/screens/     one component per active screen
-app/core/        keypad, navigation, settings, features, cache and translations
+app/core/        keypad, text entry, navigation, session, settings, cache and translations
 app/lib/         catalog, demo data, prices, buyer posts, trust and vision
 app/components/  shared small-screen UI and desktop phone frame
 public/          icons, PWA assets and recognition model
 server/          optional FastAPI image-recognition service
+worker/          account API: Cloudflare Worker + D1 (SQLite) users table
 ```

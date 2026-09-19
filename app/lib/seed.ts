@@ -107,15 +107,21 @@ export function seedReputation(deviceId: string): number {
 const BUYERS = ["Posho mill", "Secondary school", "Hotel kitchen", "Wholesaler", "Cereal store", "Hospital kitchen", "Supermarket", "Food stall"];
 const LOTS = [200, 300, 500, 800, 1000, 1500, 2000];
 
+/** demo account names, shaped like the ones app/lib/auth.ts would accept from a real trader */
+const demoUsername = (buyer: string, marketId: string) =>
+  `${buyer.toLowerCase().replace(/[^a-z0-9]+/g, "_")}${(hash(buyer + marketId) % 90) + 10}`;
+
 export function seedDemands(commodityId: string, now: number): Demand[] {
   const rnd = prng(`demand:${commodityId}`);
   const out: Demand[] = [];
   MARKETS.forEach((m, i) => {
     if (rnd() < 0.45) return;
     const local = govTodayC(commodityId, m.id);
+    const buyer = BUYERS[Math.floor(rnd() * BUYERS.length)];
     out.push({
       id: `dm-${commodityId}-${m.id}`,
-      buyer: BUYERS[Math.floor(rnd() * BUYERS.length)],
+      username: demoUsername(buyer, m.id),
+      buyer,
       phone: `0700 000 ${String(100 + ((hash(commodityId + m.id) + i) % 900))}`, // demo numbers only
       commodityId,
       marketId: m.id,

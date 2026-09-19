@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Key } from "../core/keypad";
+import { MULTITAP_MS, emptyText, typeText, type TextMode, type TextOpts, type TextState } from "../core/textentry";
 
 /**
  * Keep the focused row visible by scrolling the screen body only — scrollIntoView would also
@@ -43,6 +44,70 @@ export function Field({ label, value, unit, on }: { label: ReactNode; value: str
       </span>
     </div>
   );
+}
+
+/**
+ * A name or a password typed with the multi-tap alphabet (core/textentry.ts). The label sits
+ * above a full-width box because 240 px cannot hold "Username" and sixteen characters on one
+ * line, and the current mode is printed inside the box so `*` has a visible meaning.
+ *
+ * A masked field shows the character still being cycled — press 2 twice and you can see the "b"
+ * you are aiming at — and hides it again when the cycle closes. That is the one timer in the
+ * app, and it fires once per burst of keys, not on a schedule.
+ */
+export function TextField({ label, state, mask, on }: { label: ReactNode; state: TextState; mask?: boolean; on?: boolean }) {
+  const ref = useKeepVisible(on);
+  const [reveal, setReveal] = useState(false);
+  useEffect(() => {
+    if (!mask) return;
+    const hot = !!state.pending;
+    setReveal(hot);
+    if (!hot) return;
+    const timer = setTimeout(() => setReveal(false), MULTITAP_MS);
+    return () => clearTimeout(timer);
+  }, [state, mask]);
+
+  const shown = mask
+    ? "•".repeat(Math.max(0, state.text.length - (reveal ? 1 : 0))) + (reveal ? state.text.slice(-1) : "")
+    : state.text;
+  return (
+    <div ref={ref} className={`tf${on ? " on" : ""}`}>
+      <small>{label}</small>
+      <div className="inp txt">
+        <span>{shown}</span>
+        {on ? <u /> : null}
+        {on ? <b>{state.mode}</b> : null}
+      </div>
+    </div>
+  );
+}
+
+export interface TextFieldSpec {
+  mode?: TextMode;
+  opts?: TextOpts;
+}
+
+/**
+ * Up/Down over a few text fields, with every other key going into the focused one. Returns the
+ * states to render and a key handler to chain, the same shape as useListNav and useGridNav.
+ */
+export function useTextForm(fields: TextFieldSpec[]) {
+  const [states, setStates] = useState<TextState[]>(() => fields.map((f) => emptyText(f.mode)));
+  const [index, setIndex] = useState(0);
+  const count = fields.length;
+
+  const onKey = (key: Key): boolean => {
+    if (key === "Up" || key === "Down") {
+      setIndex((i) => (i + (key === "Down" ? 1 : count - 1)) % count);
+      return true;
+    }
+    const next = typeText(states[index], key, Date.now(), fields[index].opts);
+    if (!next) return false;
+    setStates((all) => all.map((state, i) => (i === index ? next : state)));
+    return true;
+  };
+
+  return { states, values: states.map((s) => s.text), index, setIndex, onKey };
 }
 
 export function Bars({ n }: { n: 0 | 1 | 2 | 3 }) {

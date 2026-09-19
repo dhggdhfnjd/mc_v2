@@ -3,11 +3,12 @@
 // data plus whatever this phone has written to localStorage, but callers only ever see Promises,
 // so swapping in `fetch(API_BASE + …)` later does not touch a single screen.
 
+import { hashPassword, newSalt, newToken, normalizeUsername, validatePassword, validateUsername, verifyPassword, type AuthCode } from "./auth";
 import { COMMODITIES, KES_TO_UGX, MARKETS, commodity, market, routeCost } from "./catalog";
 import { fairBand, netPriceC } from "./money";
 import { officialMeta, officialSeries, seedDemands, seedReports, seedReputation } from "./seed";
 import { aggregate } from "./trust";
-import type { Band, CrowdReport, CrowdStat, Demand } from "./types";
+import type { Account, Band, CrowdReport, CrowdStat, Demand, Session } from "./types";
 
 const DAY = 86_400_000;
 const KEY = "mz.v2.";
@@ -38,13 +39,112 @@ let network: NetworkMode = "ok";
 export const setNetwork = (mode: NetworkMode) => void (network = mode);
 export const getNetwork = () => network;
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  /** an AuthCode or "netError": the screen translates it instead of printing this message */
+  constructor(message: string, readonly code?: AuthCode | "netError") {
+    super(message);
+  }
+}
 
 async function call<T>(fn: () => T): Promise<T> {
   if (network === "down" || (network === "flaky" && Math.random() < 0.5)) {
     throw new ApiError("Network problem");
   }
   return fn();
+}
+
+// ---------- accounts ----------
+// With NEXT_PUBLIC_API_BASE set, these four calls are the Cloudflare Worker in worker/ and the
+// account lives in the D1 `users` table, so the same name works on any handset. Without it the
+// same schema is kept in this phone's own storage, which is what a judge sees in an offline demo
+// and what the unit tests run against.
+
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? "").replace(/\/+$/, "");
+export const usingRemoteAccounts = () => API_BASE !== "";
+
+const SESSION_KEY = "session";
+const USERS_KEY = "users"; // mirrors worker/schema.sql `users`, keyed by the primary key
+const SESSION_DAYS = 30;
+
+/** The signed-in account, read straight from storage: the session provider needs it synchronously. */
+export function currentSession(): Session | null {
+  const s = read<Session | null>(SESSION_KEY, null);
+  if (!s) return null;
+  if (s.expiresAt <= Date.now()) {
+    write<Session | null>(SESSION_KEY, null);
+    return null;
+  }
+  return s;
+}
+
+async function callApi(path: string, init: RequestInit): Promise<unknown> {
+  let res: Response;
+  try {
+    res = await fetch(API_BASE + path, { ...init, headers: { "Content-Type": "application/json", ...(init.headers ?? {}) } });
+  } catch {
+    throw new ApiError("Network problem", "netError");
+  }
+  if (res.status === 204) return null;
+  const data = (await res.json().catch(() => ({}))) as { error?: AuthCode };
+  if (!res.ok) throw new ApiError(data.error ?? "Network problem", data.error ?? "netError");
+  return data;
+}
+
+const users = () => read<Record<string, Account>>(USERS_KEY, {});
+
+async function localRegister(rawName: string, password: string): Promise<Session> {
+  const bad = validateUsername(rawName) ?? validatePassword(password);
+  if (bad) throw new ApiError(bad, bad);
+  const username = normalizeUsername(rawName);
+  const table = users();
+  if (table[username]) throw new ApiError("userTaken", "userTaken");
+  const salt = newSalt();
+  table[username] = { username, password: await hashPassword(password, salt), salt, createdAt: Date.now() };
+  write(USERS_KEY, table);
+  return startLocalSession(username);
+}
+
+async function localLogin(rawName: string, password: string): Promise<Session> {
+  const row = users()[normalizeUsername(rawName)];
+  // one answer for an unknown name and a wrong password, exactly like the Worker
+  if (!row || !(await verifyPassword(password, row.salt, row.password))) {
+    throw new ApiError("wrongLogin", "wrongLogin");
+  }
+  return startLocalSession(row.username);
+}
+
+function startLocalSession(username: string): Session {
+  const session: Session = { username, token: newToken(), expiresAt: Date.now() + SESSION_DAYS * DAY };
+  write(SESSION_KEY, session);
+  return session;
+}
+
+/** POST /v1/auth/register */
+export async function register(username: string, password: string): Promise<Session> {
+  if (!usingRemoteAccounts()) return localRegister(username, password);
+  // fail on the phone before spending a request on something the server will reject anyway
+  const bad = validateUsername(username) ?? validatePassword(password);
+  if (bad) throw new ApiError(bad, bad);
+  const session = (await callApi("/v1/auth/register", { method: "POST", body: JSON.stringify({ username: normalizeUsername(username), password }) })) as Session;
+  write(SESSION_KEY, session);
+  return session;
+}
+
+/** POST /v1/auth/login */
+export async function login(username: string, password: string): Promise<Session> {
+  if (!usingRemoteAccounts()) return localLogin(username, password);
+  const session = (await callApi("/v1/auth/login", { method: "POST", body: JSON.stringify({ username: normalizeUsername(username), password }) })) as Session;
+  write(SESSION_KEY, session);
+  return session;
+}
+
+/** POST /v1/auth/logout — the phone forgets the token whatever the server says. */
+export async function logout(): Promise<void> {
+  const session = currentSession();
+  write<Session | null>(SESSION_KEY, null);
+  if (session && usingRemoteAccounts()) {
+    await callApi("/v1/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${session.token}` } }).catch(() => undefined);
+  }
 }
 
 // ---------- reads ----------
@@ -141,7 +241,10 @@ export const getHistory = (commodityId: string, marketId: string, days: number) 
   call(() => historyOf(commodityId, marketId, days));
 
 function openDemands(commodityId: string, now: number): Demand[] {
-  const mine = read<Demand[]>("demands", []).filter((d) => d.commodityId === commodityId);
+  const mine = read<Demand[]>("demands", [])
+    .filter((d) => d.commodityId === commodityId)
+    // posts written before accounts existed still have to render
+    .map((d) => ({ ...d, username: d.username || currentSession()?.username || "me" }));
   return [...mine, ...seedDemands(commodityId, now)].filter((d) => d.expiresAt > now);
 }
 
@@ -184,11 +287,15 @@ export const getMyDemand = (commodityId: string) =>
 /** One active post per commodity. Re-posting edits and renews it for three days. */
 export const postDemand = (input: { commodityId: string; marketId: string; kg: number; bidC: number; days: number; phone: string }) =>
   call(() => {
+    const session = currentSession();
+    // a post is signed: the map shows who is buying, so there is no such thing as an anonymous one
+    if (!session) throw new ApiError("needSignIn", "needSignIn");
     const now = Date.now();
     const existing = read<Demand[]>("demands", []);
     const old = existing.find((x) => x.commodityId === input.commodityId && x.mine);
     const d: Demand = {
       id: old?.id ?? `my-${now}`,
+      username: session.username,
       buyer: "You",
       phone: input.phone,
       commodityId: input.commodityId,
