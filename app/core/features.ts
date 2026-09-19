@@ -8,13 +8,14 @@
 
 import { useEffect, useState } from "react";
 
-export type Feature = "ImageUpload" | "TelScheme" | "SmsScheme" | "Vibrate";
+export type Feature = "ImageUpload" | "TelScheme" | "SmsScheme" | "Vibrate" | "AudioPlay";
 
 const DESKTOP_DEFAULT: Record<Feature, boolean> = {
   ImageUpload: true,
   TelScheme: true,
   SmsScheme: true,
   Vibrate: false,
+  AudioPlay: true,
 };
 
 export const isCloudPhone = (): boolean =>

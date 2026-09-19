@@ -27,8 +27,14 @@ PRODUCT HUB — 1 Now price · 2 I want to sell (buyer map) · 3 History · 4 I 
        └─ one active post per product; edit or close; expires after 3 days
 ```
 
-Settings is reached by the home left soft key and contains language, coordinates and the account
-(which name is signed in, and signing out).
+Settings is reached by the home left soft key and contains language, coordinates, the account
+(which name is signed in, and signing out) and the sound switch.
+
+Audio mode (`settings.audio`, off by default) is switched with `#` on the login screen or the
+fourth Settings cell. With it on, moving the highlight onto a product on Home, or onto a photo
+guess, plays that product's name: `core/audio.ts` plays `public/audio/<lang>/<id>.mp3`, recorded
+by `tools/audio/build_food_audio.py`, because Cloud Phone has `<audio>` (`AudioPlay`) but no
+speech synthesis. Re-run the script after adding a product.
 
 Location is `settings.marketId` plus an optional `settings.fix` (`source: "gps" | "manual"`).
 Prices, transport and net always use `marketId`; with a fix it is the market nearest the point.

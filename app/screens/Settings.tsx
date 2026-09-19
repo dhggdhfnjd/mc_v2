@@ -15,15 +15,17 @@ import { market } from "../lib/catalog";
 
 // the market list is still one of the three ways to set your location, from the buyer map's
 // "From where?"; here the second cell types coordinates instead
-const ENTRIES: { icon: string; label: TKey; mode: "lang" | "coords" | "account" }[] = [
+// "sound" is a switch rather than a screen: OK flips audio mode in place (core/audio.ts)
+const ENTRIES: { icon: string; label: TKey; mode: "lang" | "coords" | "account" | "sound" }[] = [
   { icon: "🌐", label: "lang", mode: "lang" },
   { icon: "📌", label: "coords", mode: "coords" },
   { icon: "👤", label: "account", mode: "account" },
+  { icon: "🔊", label: "sound", mode: "sound" },
 ];
 
 export default function Settings({ active }: ScreenProps) {
   const nav = useNav();
-  const { settings, t } = useSettings();
+  const { settings, update, t } = useSettings();
   const { user, signOut } = useSession();
   const grid = useGridNav(ENTRIES.length, 2);
   const [confirmOut, setConfirmOut] = useState(false);
@@ -34,6 +36,7 @@ export default function Settings({ active }: ScreenProps) {
     if (entry?.mode === "coords") nav.push("coords");
     // signing out throws away every screen of this account: ask once, on its own screen
     if (entry?.mode === "account") setConfirmOut(true);
+    if (entry?.mode === "sound") update({ audio: !settings.audio });
   };
 
   const onKey = (key: Key): boolean => {
@@ -65,6 +68,7 @@ export default function Settings({ active }: ScreenProps) {
     settings.lang === "en" ? "English" : "Kiswahili",
     settings.fix ? `${settings.fix.lat.toFixed(2)}, ${settings.fix.lon.toFixed(2)}` : settings.marketId ? market(settings.marketId).name : "–",
     user ? `@${user}` : "–",
+    settings.audio ? t("on") : t("off"),
   ];
   const items: GridItem[] = ENTRIES.map((e, i) => ({
     key: e.mode,

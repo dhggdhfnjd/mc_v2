@@ -6,11 +6,16 @@
 // Two fields, no keyboard: names and passwords are typed with the multi-tap alphabet
 // (core/textentry.ts), because Cloud Phone's <input> never delivers keydown. The left soft key
 // goes to Register — the only other thing a new trader can want from this screen.
+//
+// `#` switches audio mode here, before anything has to be read: with it on, the product grid
+// speaks each name as the highlight lands on it (core/audio.ts). The row names its key, like the
+// "0 None" row on the photo screen, and only shows on a client that can play audio.
 
 import { useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
-import { TextField, useNotice, useTextForm } from "../components/ui";
+import { Row, TextField, useNotice, useTextForm } from "../components/ui";
 import { errorKey } from "../core/errors";
+import { useFeature } from "../core/features";
 import type { Key } from "../core/keypad";
 import { useNav } from "../core/router";
 import { useSession } from "../core/session";
@@ -19,7 +24,8 @@ import { NAME_OPTS, SECRET_OPTS } from "../core/textentry";
 
 export default function Login({ active }: ScreenProps) {
   const nav = useNav();
-  const { t } = useSettings();
+  const { settings, update, t } = useSettings();
+  const canPlay = useFeature("AudioPlay");
   const { signIn } = useSession();
   const form = useTextForm([
     { mode: "abc", opts: NAME_OPTS },
@@ -47,6 +53,7 @@ export default function Login({ active }: ScreenProps) {
     // there is nowhere to go back to at the root, and typing is the only thing this screen does
     if (key === "RSK") return form.onKey("Del");
     if (key === "OK") return void submit(), true;
+    if (key === "#" && canPlay) return update({ audio: !settings.audio }), true;
     return form.onKey(key);
   };
 
@@ -62,6 +69,7 @@ export default function Login({ active }: ScreenProps) {
       <TextField label={t("username")} state={form.states[0]} on={form.index === 0} />
       <TextField label={t("password")} state={form.states[1]} mask on={form.index === 1} />
       <div className="mut hint">{t("textHint")}</div>
+      {canPlay ? <Row l={`# 🔊 ${t("sound")}`} r={settings.audio ? t("on") : t("off")} /> : null}
     </Screen>
   );
 }

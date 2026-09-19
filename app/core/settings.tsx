@@ -18,9 +18,11 @@ export interface Settings {
   fix: { lat: number; lon: number; accuracyM?: number; source?: "gps" | "manual" } | null;
   /** the product most recently opened */
   foodId: string;
+  /** audio mode: speak a product's name when the highlight moves onto it (core/audio.ts) */
+  audio: boolean;
 }
 
-const DEFAULTS: Settings = { lang: "en", marketId: null, network: "ok", phone: "", foodId: "maize", fix: null };
+const DEFAULTS: Settings = { lang: "en", marketId: null, network: "ok", phone: "", foodId: "maize", fix: null, audio: false };
 const STORAGE_KEY = "mz.v2.settings";
 
 interface SettingsApi {

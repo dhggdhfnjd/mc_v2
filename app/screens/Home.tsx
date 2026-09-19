@@ -2,10 +2,12 @@
 
 // Products and photo recognition share one paged 3×3 grid. This screen deliberately has no
 // digit shortcuts: the visible highlight, D-pad and OK are the only product-selection model.
+// In audio mode every move onto a product speaks its name; the camera cell stays silent.
 
 import { useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Grid, type GridItem } from "../components/ui";
+import { sayFood } from "../core/audio";
 import type { Key } from "../core/keypad";
 import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
@@ -43,17 +45,25 @@ export default function Home({ active }: ScreenProps) {
     }
   };
 
+  // spoken from the key handler, not an effect, so coming back to this screen stays quiet
+  const move = (next: number) => {
+    if (next === safe) return;
+    setIndex(next);
+    const id = entries[next]?.commodityId;
+    if (settings.audio && id) sayFood(settings.lang, id);
+  };
+
   const moveVertical = (delta: number) => {
     const next = safe + delta;
-    if (next >= 0 && next < entries.length) setIndex(next);
+    if (next >= 0 && next < entries.length) move(next);
   };
 
   const onKey = (key: Key): boolean => {
     switch (key) {
       case "Left":
-        return setIndex(safe > 0 ? safe - 1 : entries.length - 1), true;
+        return move(safe > 0 ? safe - 1 : entries.length - 1), true;
       case "Right":
-        return setIndex(safe + 1 < entries.length ? safe + 1 : 0), true;
+        return move(safe + 1 < entries.length ? safe + 1 : 0), true;
       case "Up":
         return moveVertical(-3), true;
       case "Down":

@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Hr, Row, useNotice } from "../components/ui";
+import { sayFood } from "../core/audio";
 import { useFeature } from "../core/features";
 import type { Key } from "../core/keypad";
 import { useNav } from "../core/router";
@@ -62,6 +63,8 @@ export default function Photo({ active }: ScreenProps) {
       const candidates = await provider().recognize(file);
       setSel(0);
       setState(candidates.length ? { step: "done", candidates, url: preview } : { step: "unsure", url: preview });
+      // the highlight starts on the best guess, so audio mode names it straight away
+      if (settings.audio && candidates[0]) sayFood(settings.lang, candidates[0].commodityId);
     } catch {
       setState({ step: "error" });
     }
@@ -89,7 +92,12 @@ export default function Photo({ active }: ScreenProps) {
       }
       return false;
     }
-    if (key === "Up" || key === "Down") return setSel((s) => (s + (key === "Down" ? 1 : state.candidates.length - 1)) % state.candidates.length), true;
+    if (key === "Up" || key === "Down") {
+      const next = (sel + (key === "Down" ? 1 : state.candidates.length - 1)) % state.candidates.length;
+      setSel(next);
+      if (settings.audio) sayFood(settings.lang, state.candidates[next].commodityId);
+      return true;
+    }
     if (key === "OK") return choose(sel), true;
     return false;
   };
