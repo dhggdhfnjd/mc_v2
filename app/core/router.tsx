@@ -14,7 +14,7 @@ export type ScreenName =
   // L2 — food input, then the three filtered views
   | "foodin" | "pick" | "photo" | "map" | "price" | "history"
   // L2 — the two simple branches
-  | "ledger" | "settings"
+  | "ledger" | "settings" | "near"
   // L3
   | "food" | "demand" | "deal" | "langsel";
 

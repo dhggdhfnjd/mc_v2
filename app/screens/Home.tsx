@@ -1,6 +1,6 @@
 "use client";
 
-// L1 — the main menu. Six options, each an icon plus its word, laid out on the 1–9 keys so one
+// L1 — the main menu. Seven options, each an icon plus its word, laid out on the 1–9 keys so one
 // press opens one branch. FOOD asks how you want to name the food; MAP, NOW PRICE and HISTORY
 // open straight onto the food you last looked at and carry a Food filter on the left soft key.
 
@@ -27,6 +27,7 @@ const ENTRIES: Entry[] = [
   { icon: "📈", label: "histPrice", screen: "history", filtered: true },
   { icon: "📒", label: "myDeal", screen: "ledger" },
   { icon: "⚙️", label: "setting", screen: "settings" },
+  { icon: "📍", label: "nearMe", screen: "near" },
 ];
 
 export default function Home({ active }: ScreenProps) {

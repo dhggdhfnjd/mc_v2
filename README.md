@@ -70,6 +70,8 @@ Model © Apple Inc., redistributed under its licence (`public/models/LICENSE-mob
 
 The demand map draws its bubbles on a hand-drawn SVG schematic by default. Build with `NEXT_PUBLIC_GOOGLE_MAPS_KEY=<key>` (CI reads the `GOOGLE_MAPS_KEY` repository secret) and they sit on a real map instead: one dark, label-free Google Static Maps image (zoom 7, 277×226, shown at 240 px) framing all eleven markets. `app/lib/staticmap.ts` projects each market onto it with Web Mercator and pushes overlapping bubbles apart; a thin leader line points back to the true position. The image URL is the same for every food, so changing food only redraws the SVG overlay. If the image fails to load (bad key, quota, offline) the screen falls back to the schematic; `?map=svg` forces the schematic for comparison.
 
+**Near me** (main menu `7`) centres the same kind of map on the phone and draws a 100 km circle with the markets inside it numbered by distance; OK makes the selected one your area. The location comes from `?at=lat,lon` (for demos), then `navigator.geolocation`, then the market you picked, and the screen always says which. Cloud Phone has no GPS — the page runs in CloudMosa's data centre — so on the handset expect the last fallback until this is tested on the device.
+
 The key ends up in the page, so restrict it in Google Cloud Console to the **Maps Static API** and to the widget's HTTP referrer (e.g. `https://<user>.github.io/*`).
 
 ### Crowd-price trust (D13–D15)

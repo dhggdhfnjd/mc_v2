@@ -8,6 +8,7 @@ import FoodDetail from "./FoodDetail";
 import FoodInput from "./FoodInput";
 import FoodPick from "./FoodPick";
 import Home from "./Home";
+import Nearby from "./Nearby";
 import LangCountry from "./LangCountry";
 import Ledger from "./Ledger";
 import Photo from "./Photo";
@@ -29,6 +30,7 @@ export const SCREENS: Record<ScreenName, ComponentType<ScreenProps>> = {
   // L2 — the two simple branches
   ledger: Ledger,
   settings: Settings,
+  near: Nearby,
   // L3
   food: FoodDetail,
   demand: DemandDetail,

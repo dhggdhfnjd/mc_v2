@@ -1,10 +1,10 @@
-// Geography for the demand map's optional Google Static Maps basemap. Pure maths, no React:
-// frame the markets in one fixed image, project lat/lon onto it, and push overlapping bubbles
-// apart (the twin Busia towns are 2 km apart, i.e. the same pixel at this zoom).
+// Geography for the map screens' optional Google Static Maps basemap. Pure maths, no React:
+// frame points in one fixed image, project lat/lon onto it, push overlapping bubbles apart (the
+// twin Busia towns are 2 km apart, i.e. the same pixel at corridor zoom), distances and circles.
 //
-// One image covers every market, so its URL never changes: switching food only redraws the SVG
-// overlay and the HTTP cache serves the basemap again. That matters on Cloud Phone, where the
-// user pays for screen updates.
+// Each screen asks for one image and draws everything that changes as SVG on top, so moving the
+// selection never refetches the bitmap. That matters on Cloud Phone, where the user pays for
+// screen updates.
 
 export interface LatLon {
   lat: number;
@@ -149,4 +149,32 @@ export function staticMapUrl(view: MapView, key: string, style: string[] = MAP_S
   for (const s of style) q.append("style", s);
   q.append("key", key);
   return `https://maps.googleapis.com/maps/api/staticmap?${q.toString()}`;
+}
+
+const EARTH_KM = 6371;
+const RAD = Math.PI / 180;
+
+/** great-circle distance */
+export function distanceKm(a: LatLon, b: LatLon): number {
+  const dLat = (b.lat - a.lat) * RAD;
+  const dLon = (b.lon - a.lon) * RAD;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * RAD) * Math.cos(b.lat * RAD) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_KM * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** the four compass points `km` from the centre, for framing a circle with fitView */
+export function circleBox(c: LatLon, km: number): LatLon[] {
+  const dLat = km / (EARTH_KM * RAD);
+  const dLon = dLat / Math.max(0.01, Math.cos(c.lat * RAD));
+  return [
+    { lat: c.lat + dLat, lon: c.lon },
+    { lat: c.lat - dLat, lon: c.lon },
+    { lat: c.lat, lon: c.lon + dLon },
+    { lat: c.lat, lon: c.lon - dLon },
+  ];
+}
+
+/** ground kilometres covered by one image pixel at this latitude and zoom */
+export function kmPerPx(lat: number, zoom: number): number {
+  return (2 * Math.PI * EARTH_KM * Math.cos(lat * RAD)) / (TILE * 2 ** zoom);
 }

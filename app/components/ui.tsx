@@ -97,7 +97,7 @@ export interface GridItem {
 
 export function Grid({ items, sel, cols = 3, big }: { items: GridItem[]; sel: number; cols?: number; big?: boolean }) {
   return (
-    <div className={`g9 c${cols}${big ? " big" : ""}`}>
+    <div className={`g9 c${cols}${big ? " big" : ""}${items.length > cols * 2 ? " r3" : ""}`}>
       {items.map((item, i) => (
         <div key={item.key} className={`cell${i === sel ? " on" : ""}`}>
           <b>{i + 1}</b>

@@ -115,6 +115,9 @@ body {
 .qq .g9 { gap: 2px; }
 .qq .cell { height: 37px; padding-top: 0; border-width: 1px; }
 .qq .g9.big .cell { height: 44px; }
+/* a third row of menu cells only fits QQVGA with a smaller icon */
+.qq .g9.big.r3 .cell { height: 36px; }
+.qq .g9.big.r3 .cell i { font-size: 12px; line-height: 14px; }
 /* QQVGA has 120 px of body: drop separators, hints and nice-to-have rows */
 .qq .hr, .qq .hint, .qq .opt, .qq .only-qv { display: none; }
 .only-qq { display: none; }

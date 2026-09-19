@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MARKETS } from "./catalog";
-import { fitView, fromWorld, project, spread, staticMapUrl, toWorld } from "./staticmap";
+import { circleBox, distanceKm, fitView, fromWorld, kmPerPx, project, spread, staticMapUrl, toWorld } from "./staticmap";
 
 describe("Web Mercator", () => {
   it("matches Google's documented world coordinate for Chicago", () => {
@@ -78,5 +78,26 @@ describe("staticMapUrl", () => {
     expect(url.searchParams.get("size")).toBe("277x226");
     expect(url.searchParams.getAll("style")).toEqual(["a|b"]);
     expect(url.searchParams.get("key")).toBe("K");
+  });
+});
+
+describe("distances and circles", () => {
+  const busia = { lat: 0.4608, lon: 34.1115 };
+  it("measures Busia to Kisumu at about 100 km in a straight line", () => {
+    expect(distanceKm(busia, { lat: -0.0917, lon: 34.768 })).toBeGreaterThan(90);
+    expect(distanceKm(busia, { lat: -0.0917, lon: 34.768 })).toBeLessThan(100);
+    expect(distanceKm(busia, busia)).toBe(0);
+  });
+  it("puts each compass point of the circle the radius away", () => {
+    for (const p of circleBox(busia, 100)) expect(distanceKm(busia, p)).toBeCloseTo(100, 0);
+    for (const p of circleBox({ lat: 24.8, lon: 121 }, 100)) expect(distanceKm({ lat: 24.8, lon: 121 }, p)).toBeCloseTo(100, 0);
+  });
+  it("frames a 100 km circle at zoom 7 near the equator, radius in pixels to match", () => {
+    const view = fitView(circleBox(busia, 100), 240 / 196, { top: 6, right: 6, bottom: 6, left: 6 }, 400);
+    expect(view.zoom).toBe(7);
+    const r = 100 / kmPerPx(busia.lat, view.zoom);
+    const north = project(circleBox(busia, 100)[0], view);
+    const centre = project(busia, view);
+    expect(Math.abs(centre.y - north.y)).toBeCloseTo(r, 0);
   });
 });

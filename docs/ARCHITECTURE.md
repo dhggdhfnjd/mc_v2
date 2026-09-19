@@ -15,7 +15,8 @@ L1 MAIN MENU
 ├─ 3 NOW PRICE ─▶ L2 price view ─────── filter (food) ──────┤   1/2/3 open the full view
 ├─ 4 HISTORY ───▶ L2 history view ───── filter (food) ──────┘
 ├─ 5 MY DEAL ───▶ L2 deal list ──▶ L3 deal detail
-└─ 6 SETTING ───▶ L2 setting menu ──▶ L3 language / country
+├─ 6 SETTING ───▶ L2 setting menu ──▶ L3 language / country
+└─ 7 NEAR ME ───▶ L2 map of 100 km around you ──▶ OK sets your area
 ```
 
 | Node | Screen |
@@ -29,6 +30,7 @@ L1 MAIN MENU
 | L2 history price view | `screens/Trends.tsx#History` |
 | L2 my deal list | `screens/Ledger.tsx` |
 | L2 setting menu | `screens/Settings.tsx` |
+| L2 near me | `screens/Nearby.tsx`, `core/location.ts`, `lib/staticmap.ts` |
 | L3 food detail | `screens/FoodDetail.tsx`, `lib/api.ts#getFoodDetail` |
 | L3 demand detail | `screens/DemandDetail.tsx` |
 | L3 deal detail | `screens/DealDetail.tsx` |

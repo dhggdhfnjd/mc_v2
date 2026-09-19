@@ -22,6 +22,8 @@ const en = {
   isThis: "Is this…?", none: "None of these → grid", photoFail: "Could not read the photo", demoVision: "Model unavailable: rough colour guess",
   visionLoading: "Loading recognizer (37 MB, once)", visionReady: "Recognizer ready. OK to pick a photo", visionWorking: "Looking…", notSure: "Not a crop I know",
   days: "Days", amount: "Amount",
+  nearMe: "Near me", locating: "Finding you…", locate: "Locate", setArea: "Set area", areaSet: "Area set",
+  noMarketNear: "No market within 100 km", nearest: "Nearest", gps: "GPS", demoLoc: "Demo location", noGps: "No GPS: your area",
 } as const;
 
 type Dict = Record<keyof typeof en, string>;
@@ -44,6 +46,8 @@ const sw: Dict = {
   lang: "Lugha", network: "Mtandao (demo)", reset: "Futa data ya demo", lastUpdated: "Nje ya mtandao. Mwisho", netError: "Hakuna mtandao. Jaribu tena", retry: "Jaribu",
   isThis: "Ni hii…?", none: "Hakuna kati ya hizi → orodha", visionLoading: "Inapakia (37 MB, mara moja)", visionReady: "Tayari. Sawa kuchagua picha", visionWorking: "Inaangalia…", notSure: "Sijui zao hili",
   days: "Siku", amount: "Kiasi",
+  nearMe: "Karibu nami", locating: "Inakutafuta…", locate: "Tafuta", setArea: "Chagua eneo", areaSet: "Eneo limewekwa",
+  noMarketNear: "Hakuna soko ndani ya km 100", nearest: "Karibu zaidi", demoLoc: "Mahali pa demo", noGps: "Hakuna GPS: eneo lako",
 };
 
 const DICTS: Record<Lang, Dict> = { en, sw };
