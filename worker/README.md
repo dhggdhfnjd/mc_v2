@@ -1,8 +1,8 @@
-# Mizani account API
+# Mizani API
 
 A Cloudflare Worker over a **D1** database (serverless SQLite). It exists because the widget is a
-static export on GitHub Pages: there is no server in front of it, and an account has to be the
-same account on every handset.
+static export on GitHub Pages: there is no server in front of it, an account has to be the same
+account on every handset, and a buyer post has to reach every seller's handset.
 
 ## The database
 
@@ -12,6 +12,13 @@ One table per job (`schema.sql`):
 | --- | --- | --- |
 | `users` | `username` **PRIMARY KEY** | `password` (a PBKDF2-SHA256 digest, never the password), `salt`, `created_at` |
 | `sessions` | `token` | `username` → `users`, `created_at`, `expires_at` |
+| `demands` | `id`, **UNIQUE** (`username`, `commodity_id`) | `market_id`, `kg`, `bid_c` (KES cents/kg), `phone`, `created_at`, `expires_at` |
+
+A buyer has one open post per crop, so publishing again is an upsert on (`username`,
+`commodity_id`) that keeps the id. Rows are **deleted** once they expire (at most three days), on
+every list and publish, so a phone number does not outlive the promise made to the buyer. Posts
+are validated by [`app/lib/demand.ts`](../app/lib/demand.ts), which the phone also runs before
+sending. A buyer's price lives only in this table and never feeds the market-price statistics.
 
 `username` is the primary key because it is also the public identity printed on the buyer map, so
 uniqueness is a property of the data rather than something the application has to remember to
@@ -30,6 +37,10 @@ directly, so the browser and the server can never drift into two different rules
 | `POST` | `/v1/auth/login` | `{username, password}` | `200 {username, token, expiresAt}` | `401 wrongLogin` |
 | `POST` | `/v1/auth/logout` | `Authorization: Bearer <token>` | `204` | — |
 | `GET` | `/v1/auth/me` | `Authorization: Bearer <token>` | `200 {username}` | `401 needSignIn` |
+| `GET` | `/v1/demands?c=<crop>` | — | `200 {demands:[…]}` open posts, newest first | — |
+| `GET` | `/v1/demands/mine?c=<crop>` | `Authorization: Bearer <token>` | `200 {demand}` or `{demand:null}` | `401 needSignIn` |
+| `POST` | `/v1/demands` | Bearer + `{commodityId, marketId, kg, bidC, days, phone}` | `200 {demand}` | `400 badPost` / `401 needSignIn` |
+| `POST` | `/v1/demands/close` | Bearer + `{id}` | `204` (only your own post is touched) | `401 needSignIn` |
 | `GET` | `/health` | — | `200 {ok:true}` | — |
 
 Errors come back as `{"error": "<code>"}` where the code is one of the `AuthCode` names in
@@ -51,8 +62,9 @@ Then point the widget at it:
 NEXT_PUBLIC_API_BASE=http://127.0.0.1:8787 npm run dev   # from the repository root
 ```
 
-Without `NEXT_PUBLIC_API_BASE` the app keeps accounts in this handset's own storage instead, so a
-demo runs with no backend at all (`app/lib/api.ts`, `localMode`).
+Without `NEXT_PUBLIC_API_BASE` the app keeps accounts and buyer posts in this handset's own
+storage instead, so a demo runs with no backend at all (`app/lib/api.ts`). The labelled demo buyers
+are shown in both modes.
 
 ## Deploy
 
@@ -68,4 +80,4 @@ Add the widget's origin to `ALLOWED_ORIGINS` in `wrangler.toml` (the GitHub Page
 ## Still to do
 
 - Rate-limit `/v1/auth/login` per IP and per username; D1 plus a counter table, or Workers KV.
-- Move buyer posts (`demands`) into D1 as well, with `username` a foreign key into `users`.
+- Rate-limit `POST /v1/demands` per account.

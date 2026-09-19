@@ -1,4 +1,4 @@
--- Mizani account database (Cloudflare D1 / SQLite).
+-- Mizani database (Cloudflare D1 / SQLite): accounts and buyer posts.
 -- Apply with:  npx wrangler d1 execute mizani --file=./schema.sql   (add --remote for production)
 
 -- One row per trader. The username is the primary key: it is the identity shown on the buyer
@@ -25,3 +25,23 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS sessions_username ON sessions(username);
 CREATE INDEX IF NOT EXISTS sessions_expires_at ON sessions(expires_at);
+
+-- Buyer posts ("I want to buy"). One open post per account and crop: publishing again updates the
+-- row. A buyer's intended price lives only here and never feeds the market-price statistics.
+CREATE TABLE IF NOT EXISTS demands (
+  id           TEXT    PRIMARY KEY,
+  username     TEXT    NOT NULL REFERENCES users(username) ON DELETE CASCADE,
+  commodity_id TEXT    NOT NULL,
+  -- a WFP market id from app/lib/catalog.ts: market-level only, never a street address
+  market_id    TEXT    NOT NULL,
+  kg           INTEGER NOT NULL,
+  bid_c        INTEGER NOT NULL,  -- KES cents per kg
+  -- public for three days, then the row is deleted (worker/src/index.ts sweep)
+  phone        TEXT    NOT NULL,
+  created_at   INTEGER NOT NULL,
+  expires_at   INTEGER NOT NULL,
+  UNIQUE (username, commodity_id)
+) STRICT;
+
+CREATE INDEX IF NOT EXISTS demands_commodity ON demands(commodity_id, expires_at);
+CREATE INDEX IF NOT EXISTS demands_expires_at ON demands(expires_at);

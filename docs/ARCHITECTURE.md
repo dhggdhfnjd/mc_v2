@@ -65,6 +65,9 @@ phone ── username + password ──▶ POST /v1/auth/register | /v1/auth/log
   drift. The plain password exists only inside the call that hashes it.
 - Errors cross the wire as the `AuthCode` names from `app/lib/auth.ts`, which are also i18n keys,
   so the API never sends English prose to a phone set to Kiswahili.
+- Buyer posts are the `demands` table behind `GET/POST /v1/demands`, so a post reaches every
+  seller's handset; rules are shared with the browser in `app/lib/demand.ts`, and expired rows
+  (three days) are deleted, not hidden.
 - Without `NEXT_PUBLIC_API_BASE` the same schema is kept in this handset's storage. That is the
   offline demo path, not the product: an account made that way exists on one phone.
 - Signing in or out swaps the whole screen stack (`RouterProvider` is remounted with a different

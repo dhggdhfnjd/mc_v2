@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts", "../app/lib/auth.ts"]
+  "include": ["src/**/*.ts", "../app/lib/auth.ts", "../app/lib/demand.ts"]
 }

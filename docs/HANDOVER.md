@@ -62,7 +62,7 @@ npm run typecheck && npm run lint
 
 1. **Cloud Phone 後台登錄還沒做。** 到 <https://www.cloudphone.tech/my> 用 email 登入，新增 widget：名稱 Mizani、網址填 GitHub Pages 網址、圖示 `public/icon-80.png`（80×80）。然後用後台的模擬器（只支援 Chrome）開。
 2. **實機一律沒測過。** 拿到 itel 測試機當天先驗：`navigator.hasFeature('ImageUpload')` 的結果與檔案挑選器能不能直接開相機；左軟鍵是不是 `Escape`、右軟鍵是不是 `back` 事件；`*` 和 `#` 的 `event.key`；16px 字在機上讀不讀得清楚。模擬器不支援上傳檔案，所以拍照辨識只能在實機或一般瀏覽器測。
-3. **CloudMosa 的雲端瀏覽器能不能跑 37 MB 的 WASM 模型未知。** 不行的話改走 API：部署 `server/`，建置時設 `NEXT_PUBLIC_API_BASE=<網址>`，前端不用改。
+3. **CloudMosa 的雲端瀏覽器能不能跑 37 MB 的 WASM 模型未知。** 不行的話改走 API：部署 `server/`，建置時設 `NEXT_PUBLIC_VISION_BASE=<網址>`（不是 `NEXT_PUBLIC_API_BASE`，那個是帳號 Worker），前端不用改。
 4. 辨識準確率是用網路照片量的，而且那批照片也用來調過品項描述，數字偏樂觀。要用實機拍的照片重量一次（`tools/vision/build_label_embeddings.py --eval <資料夾>`）。
 5. 沒在瀏覽器實際操作過的畫面：貼需求、我的帳本、設定（Kiswahili 切換、網路模擬）、`*` 釘選、`#` 換幣別。
 6. 所有價格、匯率、需求、季節曲線都是示意資料。真資料來源：KAMIS／KilimoSTAT（肯亞官方日價）、HDX 上的 WFP 月價（肯亞、烏干達）；烏干達的日價來源還沒找到。

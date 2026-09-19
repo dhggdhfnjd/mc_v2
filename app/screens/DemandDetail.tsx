@@ -55,7 +55,7 @@ export default function DemandDetail({ active, params }: ScreenProps) {
     >
       {/* the account is the identity; what kind of business it is only adds context */}
       <Row l={<b>@{x.username}</b>} />
-      <Row mut l={x.buyer} />
+      {x.buyer ? <Row mut l={x.buyer} /> : null}
       <Row mut l={t("wants")} r={`${fmt(x.kg)} kg ${settings.lang === "sw" ? c.sw.toLowerCase() : c.en.toLowerCase()}`} />
       <Row l={t("pays")} big r={`${d.sym} ${d.perKg(x.bidC)}/kg`} />
       <Row mut l={t("expires")} r={`${daysLeft} ${t("d")}`} />

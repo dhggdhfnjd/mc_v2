@@ -1,7 +1,7 @@
 """POST /v1/recognize — the same recogniser as the in-browser one, behind an HTTP API.
 
 Same model file and the same label table as the web app, so both paths give the same answer.
-Set NEXT_PUBLIC_API_BASE=<this service's URL> when building the web app to use it, e.g. when
+Set NEXT_PUBLIC_VISION_BASE=<this service's URL> when building the web app to use it, e.g. when
 the Cloud Phone remote browser turns out to restrict WebAssembly.
 
 Run locally:

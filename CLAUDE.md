@@ -8,7 +8,7 @@ Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, price
 - `npm test` – Vitest unit tests for `app/lib/money.ts` and `app/lib/trust.ts`
 - `npm run typecheck` / `npm run lint`
 - `npm run build` – static export to `out/` (set `NEXT_PUBLIC_BASE_PATH=/<repo>` for GitHub Pages)
-- `worker/` is the account API (Cloudflare Worker + D1): `npm run db:init`, `npm run dev`, `npm run typecheck` from that directory. Point the app at it with `NEXT_PUBLIC_API_BASE`.
+- `worker/` is the API (Cloudflare Worker + D1) for accounts and buyer posts: `npm run db:init`, `npm run dev`, `npm run typecheck` from that directory. Point the app at it with `NEXT_PUBLIC_API_BASE`. The photo recogniser in `server/` has its own variable, `NEXT_PUBLIC_VISION_BASE`.
 
 ## Platform rules (from the official Cloud Phone docs and the Meichu demo repo)
 
@@ -23,7 +23,7 @@ Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, price
 
 - `app/lib/` – pure domain code, no React: `money.ts` (integer money maths, fair band, verdict, counter-offer), `trust.ts` (crowd-price gates, weighted median, confidence), `catalog.ts`, `seed.ts` (deterministic demo data), `api.ts` (Promise API that mirrors the planned REST endpoints; in-process for now), `vision.ts` (photo → crop: MobileCLIP-S0 zero-shot in the page via ONNX Runtime Web, the same model over HTTP from `server/`, colour histogram as last resort; label table built by `tools/vision/build_label_embeddings.py`).
 - `app/core/` – platform layer: `keypad.ts`, `textentry.ts` (multi-tap alphabet; `<input>` never sends keydown on Cloud Phone), `keys.tsx` (key bus), `router.tsx` (screen stack on the History API so the RSK default `history.back()` pops one screen; its root is a prop, and signing in or out remounts it), `session.tsx`, `features.ts`, `settings.tsx`, `useApi.ts` (last-good cache fallback), `errors.ts`, `i18n.ts`, `display.ts`.
-- `worker/` – the account API: one Worker over D1 (SQLite). `users.username` is the primary key and the identity shown on the buyer map; `app/lib/auth.ts` is imported by both the browser and the Worker so there is one KDF (PBKDF2-SHA256) and one set of validation rules.
+- `worker/` – the API: one Worker over D1 (SQLite), accounts and buyer posts (`demands`; rules shared with the browser in `app/lib/demand.ts`). `users.username` is the primary key and the identity shown on the buyer map; `app/lib/auth.ts` is imported by both the browser and the Worker so there is one KDF (PBKDF2-SHA256) and one set of validation rules.
 - `app/screens/` – one screen per node of the menu tree; registry in `index.ts`.
 - `app/components/` – `Screen` (header/body/soft keys + key registration), `ui` (`Grid`/`useGridNav` for the icon menus, Row, Field, Bars, Spark), `PhoneFrame` (desktop only).
 
