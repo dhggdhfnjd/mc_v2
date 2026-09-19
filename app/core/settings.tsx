@@ -13,9 +13,11 @@ export interface Settings {
   marketId: string | null;
   favorites: string[];
   network: NetworkMode;
+  /** the food the three filtered views are showing; set by every food pick */
+  foodId: string;
 }
 
-const DEFAULTS: Settings = { lang: "en", marketId: null, favorites: ["maize", "beans"], network: "ok" };
+const DEFAULTS: Settings = { lang: "en", marketId: null, favorites: ["maize", "beans"], network: "ok", foodId: "maize" };
 const STORAGE_KEY = "mz.v1.settings";
 
 interface SettingsApi {

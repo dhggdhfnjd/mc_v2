@@ -86,6 +86,57 @@ export function useListNav(count: number, initial = 0) {
   return { index: safe, setIndex, onKey };
 }
 
+/** One option = one icon plus its word. The number badge maps the cell to its digit key. */
+export interface GridItem {
+  key: string;
+  icon: ReactNode;
+  label: ReactNode;
+  /** pinned marker, used by the food grid for favourites */
+  pin?: boolean;
+}
+
+export function Grid({ items, sel, cols = 3, big }: { items: GridItem[]; sel: number; cols?: number; big?: boolean }) {
+  return (
+    <div className={`g9 c${cols}${big ? " big" : ""}`}>
+      {items.map((item, i) => (
+        <div key={item.key} className={`cell${i === sel ? " on" : ""}`}>
+          <b>{i + 1}</b>
+          {item.pin ? <s>★</s> : null}
+          <i>{item.icon}</i>
+          {item.label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** D-pad focus over a grid: Left/Right walk the cells, Up/Down jump a whole row. */
+export function useGridNav(count: number, cols = 3) {
+  const [index, setIndex] = useState(0);
+  const safe = count === 0 ? 0 : Math.min(index, count - 1);
+  const onKey = (key: Key): boolean => {
+    if (count === 0) return false;
+    switch (key) {
+      case "Left":
+        return setIndex((safe - 1 + count) % count), true;
+      case "Right":
+        return setIndex((safe + 1) % count), true;
+      case "Up": {
+        const up = safe - cols;
+        // wrap to the last cell of this column
+        return setIndex(up >= 0 ? up : safe + cols * Math.floor((count - 1 - safe) / cols)), true;
+      }
+      case "Down": {
+        const down = safe + cols;
+        return setIndex(down < count ? down : safe % cols), true;
+      }
+      default:
+        return false;
+    }
+  };
+  return { index: safe, setIndex, onKey };
+}
+
 /** short-lived message line; two screen updates in total (show, hide) */
 export function useNotice(ms = 2200): [string | null, (msg: string) => void] {
   const [msg, setMsg] = useState<string | null>(null);

@@ -1,40 +1,37 @@
 import type { ComponentType } from "react";
 import type { ScreenProps } from "../components/Screen";
 import type { ScreenName } from "../core/router";
-import Area from "./Area";
-import Border from "./Border";
-import Calc from "./Calc";
-import CloseDeal from "./CloseDeal";
+import DealDetail from "./DealDetail";
+import DemandDetail from "./DemandDetail";
 import DemandMap from "./DemandMap";
-import { DemandDetail, DemandList } from "./Demands";
-import { PostDemand, Report } from "./Forms";
+import FoodDetail from "./FoodDetail";
+import FoodInput from "./FoodInput";
+import FoodPick from "./FoodPick";
 import Home from "./Home";
+import LangCountry from "./LangCountry";
 import Ledger from "./Ledger";
-import Menu from "./Menu";
 import Photo from "./Photo";
 import Price from "./Price";
 import Settings from "./Settings";
-import ShowCard from "./ShowCard";
-import { History, Season } from "./Trends";
+import { History } from "./Trends";
 
-/** one screen per team decision — see docs/ARCHITECTURE.md for the D1–D15 mapping */
+/** The three-level menu tree of docs/ARCHITECTURE.md, one entry per node. */
 export const SCREENS: Record<ScreenName, ComponentType<ScreenProps>> = {
-  home: Home, // D1
-  area: Area, // D2
-  price: Price, // D3
-  calc: Calc, // D4 + bargaining
-  card: ShowCard,
-  close: CloseDeal, // D5, D12, D13
-  menu: Menu,
-  demands: DemandList, // D7
-  map: DemandMap, // D8
-  demand: DemandDetail,
-  post: PostDemand, // D7
-  history: History, // D9
-  season: Season, // D10
-  report: Report, // D11
-  ledger: Ledger, // D12
-  border: Border,
+  // L1
+  home: Home,
+  // L2 — food input, then the three filtered views
+  foodin: FoodInput,
+  pick: FoodPick,
   photo: Photo,
+  map: DemandMap,
+  price: Price,
+  history: History,
+  // L2 — the two simple branches
+  ledger: Ledger,
   settings: Settings,
+  // L3
+  food: FoodDetail,
+  demand: DemandDetail,
+  deal: DealDetail,
+  langsel: LangCountry,
 };

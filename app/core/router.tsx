@@ -7,10 +7,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { isCloudPhone } from "./features";
 
+/** L1 main menu, the L2 views it opens, and the L3 details under them — see docs/ARCHITECTURE.md */
 export type ScreenName =
-  | "home" | "area" | "price" | "calc" | "card" | "close" | "menu"
-  | "demands" | "map" | "demand" | "post"
-  | "history" | "season" | "report" | "ledger" | "border" | "photo" | "settings";
+  // L1
+  | "home"
+  // L2 — food input, then the three filtered views
+  | "foodin" | "pick" | "photo" | "map" | "price" | "history"
+  // L2 — the two simple branches
+  | "ledger" | "settings"
+  // L3
+  | "food" | "demand" | "deal" | "langsel";
 
 export type Params = Record<string, unknown>;
 

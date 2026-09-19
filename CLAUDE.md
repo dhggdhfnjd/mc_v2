@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, deal maths, bargaining help and a demand board for informal cross-border traders at Busia (Kenya–Uganda). Competition entry for the CloudMosa track; the team's decisions are numbered D1–D15 in `docs/ARCHITECTURE.md` and every screen maps to one of them.
+Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, price history and a buyer-demand map for informal cross-border traders at Busia (Kenya–Uganda). Competition entry for the CloudMosa track. The app is a three-level menu — main menu, view, detail — drawn as numbered icon cells; the tree and the screen behind each node are in `docs/ARCHITECTURE.md`.
 
 ## Commands
 
@@ -22,11 +22,12 @@ Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, deal 
 
 - `app/lib/` – pure domain code, no React: `money.ts` (integer money maths, fair band, verdict, counter-offer), `trust.ts` (crowd-price gates, weighted median, confidence), `catalog.ts`, `seed.ts` (deterministic demo data), `api.ts` (Promise API that mirrors the planned REST endpoints; in-process for now), `vision.ts` (photo → crop: MobileCLIP-S0 zero-shot in the page via ONNX Runtime Web, the same model over HTTP from `server/`, colour histogram as last resort; label table built by `tools/vision/build_label_embeddings.py`).
 - `app/core/` – platform layer: `keypad.ts`, `keys.tsx` (key bus), `router.tsx` (screen stack on the History API so the RSK default `history.back()` pops one screen), `features.ts`, `settings.tsx`, `useApi.ts` (last-good cache fallback), `i18n.ts`, `display.ts`.
-- `app/screens/` – one screen per team decision; registry in `index.ts`.
-- `app/components/` – `Screen` (header/body/soft keys + key registration), `ui` (Row, Field, Bars, Spark), `PhoneFrame` (desktop only).
+- `app/screens/` – one screen per node of the menu tree; registry in `index.ts`.
+- `app/components/` – `Screen` (header/body/soft keys + key registration), `ui` (`Grid`/`useGridNav` for the icon menus, Row, Field, Bars, Spark), `PhoneFrame` (desktop only).
 
 ## Conventions
 
+- Every menu option is an icon plus its word in a numbered cell (`Grid`), never a bare text row: one look, one digit.
 - Internal prices are KES cents per kg (`*C`); totals are whole KES; convert only at the display edge (`core/display.ts`).
 - No LLM or randomness in money paths. Anything that changes `money.ts` or `trust.ts` needs a test.
 - Keep strings short (≈26 characters per line at 240 px). Kiswahili strings need native review.

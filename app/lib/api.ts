@@ -5,7 +5,7 @@
 
 import { COMMODITIES, KES_TO_UGX, MARKETS, commodity, market, routeCost } from "./catalog";
 import { fairBand, netPriceC } from "./money";
-import { govTodayC, officialMeta, officialSeries, seedDemands, seedReports, seedReputation } from "./seed";
+import { govTodayC, officialMeta, officialSeries, seedDeals, seedDemands, seedReports, seedReputation } from "./seed";
 import { aggregate, screenReport } from "./trust";
 import type { Band, CrowdReport, CrowdStat, Deal, Demand, ReportStatus, Side } from "./types";
 
@@ -154,9 +154,8 @@ export interface HistoryData {
   change: number;
 }
 
-/** GET /v1/trends/history?c&m&range — downsampled: a 240 px screen cannot show more */
-export const getHistory = (commodityId: string, marketId: string, days: number) =>
-  call((): HistoryData => {
+function historyOf(commodityId: string, marketId: string, days: number): HistoryData {
+  {
     const series = officialSeries(commodityId, marketId, days + 1, Date.now()).reverse();
     const bucket = Math.max(1, Math.ceil(series.length / 24));
     const points: number[] = [];
@@ -173,7 +172,12 @@ export const getHistory = (commodityId: string, marketId: string, days: number) 
       nowC: series[series.length - 1],
       change: series[series.length - 1] / series[0] - 1,
     };
-  });
+  }
+}
+
+/** GET /v1/trends/history?c&m&range — downsampled: a 240 px screen cannot show more */
+export const getHistory = (commodityId: string, marketId: string, days: number) =>
+  call(() => historyOf(commodityId, marketId, days));
 
 export interface SeasonData {
   index: number[];
@@ -214,9 +218,8 @@ export interface DemandView extends Demand {
   rank: number;
 }
 
-/** GET /v1/demands?c&from — ranked by what the seller really keeps, not by the headline bid */
-export const getDemands = (commodityId: string, fromId: string) =>
-  call((): DemandView[] => {
+function demandsOf(commodityId: string, fromId: string): DemandView[] {
+  {
     const now = Date.now();
     return openDemands(commodityId, now)
       .map((d) => {
@@ -232,6 +235,31 @@ export const getDemands = (commodityId: string, fromId: string) =>
       })
       .sort((a, b) => b.netC - a.netC)
       .map((d, i) => ({ ...d, rank: i + 1 }));
+  }
+}
+
+/** GET /v1/demands?c&from — ranked by what the seller really keeps, not by the headline bid */
+export const getDemands = (commodityId: string, fromId: string) =>
+  call(() => demandsOf(commodityId, fromId));
+
+export interface FoodDetail {
+  price: PriceBundle;
+  history: HistoryData;
+  /** the buyer who leaves the seller the most after transport, or null when nobody is buying */
+  best: DemandView | null;
+  demands: number;
+}
+
+/** GET /v1/food?c&m — the three panels of the food detail view in the one call that screen gets */
+export const getFoodDetail = (commodityId: string, marketId: string) =>
+  call((): FoodDetail => {
+    const list = demandsOf(commodityId, marketId);
+    return {
+      price: bundle(commodityId, marketId, 0, Date.now()),
+      history: historyOf(commodityId, marketId, 30),
+      best: list[0] ?? null,
+      demands: list.length,
+    };
   });
 
 /** best open bid net of transport — the "or sell elsewhere" line on the bargaining screen */
@@ -296,7 +324,11 @@ export const postDeal = (deal: Omit<Deal, "id" | "at">) =>
   });
 
 /** GET /v1/me/deals */
-export const getDeals = () => call(() => read<Deal[]>("deals", []));
+/** the trader's own deals, newest first, over the seeded book the demo ships with */
+const allDeals = (): Deal[] =>
+  [...read<Deal[]>("deals", []), ...seedDeals(Date.now())].sort((a, b) => b.at - a.at);
+
+export const getDeals = () => call(allDeals);
 
 export interface Summary {
   count: number;
@@ -311,7 +343,7 @@ export interface Summary {
 export const getSummary = () =>
   call((): Summary => {
     const since = Date.now() - 7 * DAY;
-    const deals = read<Deal[]>("deals", []).filter((d) => d.at >= since && d.priceC !== null);
+    const deals = allDeals().filter((d) => d.at >= since && d.priceC !== null);
     const edge = deals.map((d) => (d.side === "sell" ? d.priceC! / d.refC - 1 : 1 - d.priceC! / d.refC));
     return {
       count: deals.length,

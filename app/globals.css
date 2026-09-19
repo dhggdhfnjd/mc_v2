@@ -104,13 +104,17 @@ body {
 
 /* S1 grid: the 3x3 mirrors the 1–9 keys */
 .g9 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; flex: none; }
-.cell { height: 66px; background: var(--cell); border: 2px solid #1e3327; border-radius: 4px; position: relative; text-align: center; font-size: var(--fs-s); padding-top: 3px; overflow: hidden; }
+.g9.c2 { grid-template-columns: repeat(2, 1fr); }
+/* menu grids carry two-word labels, so their cells are a line taller */
+.g9.big .cell { height: 74px; }
+.cell { height: 66px; background: var(--cell); border: 2px solid #1e3327; border-radius: 4px; position: relative; text-align: center; font-size: var(--fs-s); padding: 3px 2px 0; overflow: hidden; line-height: 1.1; }
 .cell.on { border-color: var(--foc); background: #1d3325; }
 .cell b { position: absolute; left: 4px; top: 1px; color: var(--foc); font-size: 11px; }
 .cell s { position: absolute; right: 4px; top: 0; color: var(--foc); font-size: 11px; text-decoration: none; }
 .cell i { display: block; font-style: normal; font-size: 25px; line-height: 34px; }
 .qq .g9 { gap: 2px; }
 .qq .cell { height: 37px; padding-top: 0; border-width: 1px; }
+.qq .g9.big .cell { height: 44px; }
 /* QQVGA has 120 px of body: drop separators, hints and nice-to-have rows */
 .qq .hr, .qq .hint, .qq .opt, .qq .only-qv { display: none; }
 .only-qq { display: none; }

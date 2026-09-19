@@ -1,6 +1,6 @@
 "use client";
 
-// The bubble map (D8, recording 93): type a crop, and demand "bubbles up" along the Busia
+// L2 MAP VIEW — the bubble map: demand for the filtered food "bubbles up" along the Busia
 // corridor. It is a schematic, not a slippy map: Cloud Phone streams vector draw commands, so
 // a static SVG is cheap while raster map tiles would be slow, blurry and costly on data.
 // Bubble size = quantity wanted, number = rank by net price. D-pad hops between bubbles;
@@ -52,7 +52,7 @@ function neighbour(from: Bubble, all: Bubble[], key: "Up" | "Down" | "Left" | "R
 export default function DemandMap({ active, params }: ScreenProps) {
   const nav = useNav();
   const { settings, t } = useSettings();
-  const c = commodity(params.commodityId as string);
+  const c = commodity((params.commodityId as string | undefined) ?? settings.foodId);
   const marketId = settings.marketId ?? "busia-ke";
   const me = market(marketId);
   const d = display(me.currency, KES_TO_UGX);
@@ -75,7 +75,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
   const sel = bubbles.find((b) => b.marketId === selId) ?? bubbles[0] ?? null;
 
   const onKey = (key: Key): boolean => {
-    if (key === "LSK") return nav.back(), true;
+    if (key === "LSK") return nav.replace("foodin", { then: "map" }), true;
     if (!sel) return false;
     if (key === "Up" || key === "Down" || key === "Left" || key === "Right") {
       const next = neighbour(sel, bubbles, key);
@@ -96,7 +96,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
     <Screen
       active={active}
       title={`${t("whoWants")} ${(settings.lang === "sw" ? c.sw : c.en).toLowerCase()}?`}
-      soft={{ l: t("list"), c: t("open") }}
+      soft={{ l: t("filter"), c: t("open") }}
       onKey={onKey}
       flush
     >

@@ -4,13 +4,14 @@
 // On Cloud Phone <input type="file"> opens the native full-screen picker (Phone / MemoryCard).
 // The recogniser (lib/vision.ts) starts loading as soon as this screen opens, so it is usually
 // ready by the time a photo has been chosen. The trader confirms one of three candidates with a
-// single digit; "not a crop" or "none of these" drops back to the grid.
+// single digit; "not a crop" or "none of these" hands over to the text grid instead.
+// `then` is the view to open once the food is known, so this works as a filter for any of them.
 
 import { useEffect, useRef, useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Hr, Row } from "../components/ui";
 import { isDigit, type Key } from "../core/keypad";
-import { useNav } from "../core/router";
+import { useNav, type ScreenName } from "../core/router";
 import { useSettings } from "../core/settings";
 import { commodity } from "../lib/catalog";
 import { visionProvider, type Candidate, type VisionProvider } from "../lib/vision";
@@ -25,9 +26,9 @@ type State =
 let shared: VisionProvider | null = null;
 const provider = () => (shared ??= visionProvider());
 
-export default function Photo({ active }: ScreenProps) {
+export default function Photo({ active, params }: ScreenProps) {
   const nav = useNav();
-  const { settings, t } = useSettings();
+  const { settings, update, t } = useSettings();
   const fileRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<State>({ step: "idle" });
   const [sel, setSel] = useState(0);
@@ -64,16 +65,18 @@ export default function Photo({ active }: ScreenProps) {
     }
   };
 
+  const then = (params.then as ScreenName | undefined) ?? "food";
+
   const choose = (i: number) => {
     if (state.step !== "done" || !state.candidates[i]) return;
     const commodityId = state.candidates[i].commodityId;
-    if (settings.marketId) nav.replace("price", { commodityId });
-    else nav.replace("area", { then: commodityId });
+    update({ foodId: commodityId });
+    nav.replace(then, { commodityId });
   };
 
   const onKey = (key: Key): boolean => {
     if (key === "LSK") return fileRef.current?.click(), true;
-    if (key === "0") return nav.back(), true;
+    if (key === "0") return nav.replace("pick", { then }), true;
     if (state.step !== "done") {
       if (key === "OK") return fileRef.current?.click(), true;
       return false;

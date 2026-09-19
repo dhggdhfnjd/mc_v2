@@ -2,25 +2,52 @@
 
 The full design — meeting notes, Busia/J-PAL evidence, screen sketches, trust model, system diagram, data model and API — is the "Mizani 系統架構" page: <https://claude.ai/artifact/CVRT1T6Zo8eyZQR7YzyWdH> (private; ask the owner for access). This file is the short version that travels with the code.
 
-## Team decisions (19 Sep 2026) → code
+## Menu tree (19 Sep 2026)
 
-| # | Decision | Where |
-| --- | --- | --- |
-| D1 | First screen picks the product; favourites | `screens/Home.tsx` |
-| D2 | Then pick your area | `screens/Area.tsx`, `core/settings.tsx` |
-| D3 | Show the official per-kg price and the user-reported price | `screens/Price.tsx`, `lib/api.ts#getPrices` |
-| D4 | Enter a quantity, get the amount | `screens/Calc.tsx`, `lib/money.ts` |
-| D5 | Ask "did you close, at what price?"; the answer is a crowd data point | `screens/CloseDeal.tsx`, `lib/api.ts#postDeal` |
-| D6 | No delivery, no logistics (rejected) | — |
-| D7 | "Reverse Shopee": buyers post place + crop + quantity + price; sellers deliver | `screens/Demands.tsx`, `screens/Forms.tsx#PostDemand` |
-| D8 | Demand as bubbles on a map; compare fare and price | `screens/DemandMap.tsx`, `lib/catalog.ts#routeCost` |
-| D9 | History = trend | `screens/Trends.tsx#History` |
-| D10 | Season, "like booking a flight" | `screens/Trends.tsx#Season` |
-| D11 | Report: product preset, market, quality | `screens/Forms.tsx#Report` |
-| D12 | Personal ledger as the incentive to report | `screens/Ledger.tsx` |
-| D13 | Photo after a deal as evidence | `screens/CloseDeal.tsx` (weight ×1.5 in `lib/trust.ts`) |
-| D14 | Government price is the anchor, crowd price secondary | `lib/money.ts#fairBand`, `lib/trust.ts#screenReport` |
-| D15 | Reporter credibility without identity checks; confidence indicator | `lib/trust.ts` (`aggregate`, `confidenceBars`, `nextReputation`) |
+The app is a three-level menu. Every option is an icon plus its word on a numbered cell, so the
+same move — look, press a digit — works on every screen.
+
+```
+L1 MAIN MENU
+├─ 1 FOOD ──────▶ L2 food input ─┬─ Photo (lib/vision.ts)  ─┐
+│                                └─ Text  (the crop grid)   ├─▶ L3 FOOD DETAIL
+├─ 2 MAP ───────▶ L2 map view ───────── filter (food) ──────┤   map · now price · history
+├─ 3 NOW PRICE ─▶ L2 price view ─────── filter (food) ──────┤   1/2/3 open the full view
+├─ 4 HISTORY ───▶ L2 history view ───── filter (food) ──────┘
+├─ 5 MY DEAL ───▶ L2 deal list ──▶ L3 deal detail
+└─ 6 SETTING ───▶ L2 setting menu ──▶ L3 language / country
+```
+
+| Node | Screen |
+| --- | --- |
+| L1 main menu | `screens/Home.tsx` |
+| L2 food input method | `screens/FoodInput.tsx` |
+| L2 food by photo | `screens/Photo.tsx`, `lib/vision.ts` |
+| L2 food by text | `screens/FoodPick.tsx` |
+| L2 map view | `screens/DemandMap.tsx`, `lib/catalog.ts#routeCost` |
+| L2 now price view | `screens/Price.tsx`, `lib/api.ts#getPrices` |
+| L2 history price view | `screens/Trends.tsx#History` |
+| L2 my deal list | `screens/Ledger.tsx` |
+| L2 setting menu | `screens/Settings.tsx` |
+| L3 food detail | `screens/FoodDetail.tsx`, `lib/api.ts#getFoodDetail` |
+| L3 demand detail | `screens/DemandDetail.tsx` |
+| L3 deal detail | `screens/DealDetail.tsx` |
+| L3 language / country | `screens/LangCountry.tsx` |
+
+The three filtered views remember the last food (`settings.foodId`), so L1 opens them straight
+away; their left soft key re-enters the food input as the "filter (food)" step.
+
+### What the restructure dropped
+
+The earlier build was organised around the team decisions D1–D15 and had screens for bargaining
+(D4), closing a deal (D5, D12, D13), reporting a price (D11), posting a demand (D7), the demand
+list, the seasonal calendar (D10) and border FX. The menu tree above has no node for them, so
+those screens were removed. `lib/money.ts` and `lib/trust.ts` still hold the fair-band, verdict,
+counter-offer and crowd-screening maths, with their tests, so the flows can be restored on top of
+them. `screens/Area.tsx` became the country half of the L3 language / country screen.
+
+Nothing writes to the ledger any more, so `lib/seed.ts#seedDeals` supplies a week of demo deals
+to keep that branch alive.
 
 ## Runtime picture
 

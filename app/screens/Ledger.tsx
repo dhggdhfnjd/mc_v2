@@ -1,29 +1,36 @@
 "use client";
 
-// My deals (D12): the trader's own book. It is the reason she reports at all — every saved
-// deal is her record first and an anonymous market data point second.
+// L2 MY DEAL LIST — the trader's own book: the week in four numbers, then every saved deal.
+// OK opens the L3 detail for the focused row.
 
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Hr, Row, useListNav } from "../components/ui";
 import { display } from "../core/display";
 import { shortDate } from "../core/i18n";
 import type { Key } from "../core/keypad";
+import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
 import { useApi } from "../core/useApi";
 import { getDeals, getSummary } from "../lib/api";
 import { KES_TO_UGX, commodity, market } from "../lib/catalog";
 
 export default function Ledger({ active }: ScreenProps) {
+  const nav = useNav();
   const { settings, t } = useSettings();
   const marketId = settings.marketId ?? "busia-ke";
   const d = display(market(marketId).currency, KES_TO_UGX);
   const { data } = useApi("ledger", async () => ({ deals: await getDeals(), sum: await getSummary() }), []);
   const list = useListNav(data?.deals.length ?? 0);
 
-  const onKey = (key: Key): boolean => list.onKey(key);
+  const onKey = (key: Key): boolean => {
+    if (list.onKey(key)) return true;
+    const deal = data?.deals[list.index];
+    if (key === "OK" && deal) return nav.push("deal", { deal }), true;
+    return false;
+  };
 
   return (
-    <Screen active={active} title={t("ledger")} soft={{}} onKey={onKey}>
+    <Screen active={active} title={t("myDeal")} soft={{ c: data?.deals.length ? t("ok") : "" }} onKey={onKey}>
       {data ? (
         <>
           <Row l={<b>{t("week")}</b>} r={`${data.sum.count} ${t("deals")}`} />
