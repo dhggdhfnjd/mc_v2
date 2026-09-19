@@ -9,13 +9,11 @@ import FoodDetail from "./FoodDetail";
 import Home from "./Home";
 import LangCountry from "./LangCountry";
 import Login from "./Login";
-import Nearby from "./Nearby";
 import Photo from "./Photo";
 import Price from "./Price";
 import Register from "./Register";
 import Settings from "./Settings";
 import { History } from "./Trends";
-import Where from "./Where";
 
 /** The three-level menu tree of docs/ARCHITECTURE.md, one entry per node. */
 export const SCREENS: Record<ScreenName, ComponentType<ScreenProps>> = {
@@ -29,9 +27,7 @@ export const SCREENS: Record<ScreenName, ComponentType<ScreenProps>> = {
   demand: DemandDetail,
   settings: Settings,
   langsel: LangCountry,
-  where: Where,
   login: Login,
   register: Register,
-  near: Nearby,
   coords: Coords,
 };
