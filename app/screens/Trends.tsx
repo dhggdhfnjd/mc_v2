@@ -1,31 +1,30 @@
 "use client";
 
-// L2 HISTORY PRICE VIEW — the plain trend for one food. ◀▶ changes the window,
-// the left soft key returns to the product grid.
+// Monthly WFP history for the same market shown by Now price. Missing months stay blank.
 
 import { useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Hr, Row, Spark } from "../components/ui";
 import { display } from "../core/display";
+import { monthYear } from "../core/i18n";
 import type { Key } from "../core/keypad";
 import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
 import { useApi } from "../core/useApi";
 import { getHistory } from "../lib/api";
-import { KES_TO_UGX, commodity, market } from "../lib/catalog";
+import { commodity, market } from "../lib/catalog";
 
-const RANGES = [30, 90, 365];
+const RANGES = [12, 24, 60];
 
 export function History({ active, params }: ScreenProps) {
   const nav = useNav();
   const { settings, t } = useSettings();
   const c = commodity((params.commodityId as string | undefined) ?? settings.foodId);
-  const marketId = settings.marketId ?? "busia-ke";
-  const m = market(marketId);
-  const d = display(m.currency, KES_TO_UGX);
+  const m = market(c.priceMarketId);
+  const money = display("KES", 1);
   const [ri, setRi] = useState(0);
-  const days = RANGES[ri];
-  const { data, error } = useApi(`history.${c.id}.${marketId}.${days}`, () => getHistory(c.id, marketId, days), [c.id, marketId, days]);
+  const months = RANGES[ri];
+  const { data, error } = useApi(`wfp-history.${c.id}.${months}`, () => getHistory(c.id, months), [c.id, months]);
 
   const onKey = (key: Key): boolean => {
     if (key === "Left" || key === "Right") return setRi((i) => (i + (key === "Right" ? 1 : RANGES.length - 1)) % RANGES.length), true;
@@ -35,16 +34,18 @@ export function History({ active, params }: ScreenProps) {
 
   return (
     <Screen active={active} title={`${c.icon} ${t("histPrice")}`} sub={m.name} soft={{ l: t("products") }} onKey={onKey}>
-      <Row l={<>◀ {days} {t("days").toLowerCase()} ▶</>} r={data ? <span className={data.change >= 0 ? "up" : "dn"}>{data.change >= 0 ? "▲ +" : "▼ "}{(data.change * 100).toFixed(0)}%</span> : undefined} />
+      <Row l={<>◀ {months} {t("months")} ▶</>} />
       {error ? <div className="vd idle">{t("netError")}</div> : null}
       {data ? (
         <>
-          <Spark points={data.points} />
+          <Spark points={data.points} fromAt={data.fromAt} toAt={data.toAt} />
+          <Row mut l={`${monthYear(data.fromAt)} – ${monthYear(data.toAt)}`} r={`${data.observations}/${data.expectedMonths} ${t("observations").toLowerCase()}`} />
+          <div className="mut hint">{t("missingMonths")}</div>
           <Hr />
-          <Row l={t("now")} big r={<>{d.sym} {d.perKg(data.nowC)}<small> /kg</small></>} />
-          <Row mut l={t("max")} r={d.perKg(data.maxC)} />
-          <Row mut l={t("avg")} r={d.perKg(data.avgC)} />
-          <Row mut l={t("min")} r={d.perKg(data.minC)} />
+          <Row l={t("now")} big r={<>KSh {money.perKg(data.nowC)}<small> /kg</small></>} />
+          <Row mut l={t("max")} r={money.perKg(data.maxC)} />
+          <Row mut l={t("avg")} r={money.perKg(data.avgC)} />
+          <Row mut l={t("min")} r={money.perKg(data.minC)} />
         </>
       ) : null}
     </Screen>

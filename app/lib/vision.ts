@@ -211,7 +211,7 @@ export class ClipRecognizer implements VisionProvider {
       input[2 * plane + i] = data[i * 4 + 2] / 255;
     }
     const output = await session.run({ pixel_values: new ort.Tensor("float32", input, [1, 3, SIZE, SIZE]) });
-    const known = new Set(COMMODITIES.map((c) => c.id));
+    const known = new Set(COMMODITIES.filter((c) => c.photo).map((c) => c.id));
     return rank(output.image_embeds.data as Float32Array, table).filter((c) => known.has(c.commodityId));
   }
 }
@@ -230,7 +230,7 @@ export class HttpRecognizer implements VisionProvider {
     const res = await fetch(`${this.base}/v1/recognize`, { method: "POST", body });
     if (!res.ok) throw new Error(`Recognition failed (${res.status})`);
     const json = (await res.json()) as { candidates: Candidate[] };
-    const known = new Set(COMMODITIES.map((c) => c.id));
+    const known = new Set(COMMODITIES.filter((c) => c.photo).map((c) => c.id));
     return json.candidates.filter((c) => known.has(c.commodityId)).slice(0, 3);
   }
 }
@@ -241,12 +241,12 @@ export class HttpRecognizer implements VisionProvider {
 type ColourClass = "red" | "yellow" | "green" | "brown" | "pale" | "dark";
 
 const BY_COLOUR: Record<ColourClass, string[]> = {
-  red: ["tomato", "pepper", "onion", "melon"],
-  yellow: ["maize", "banana", "potato", "millet"],
-  green: ["cabbage", "kale", "matooke", "melon", "ndengu"],
-  brown: ["potato", "cassava", "gnuts", "beans", "sorghum"],
-  pale: ["rice", "omena", "cassava", "onion"],
-  dark: ["beans", "sorghum", "omena", "millet"],
+  red: ["tomato", "onion"],
+  yellow: ["maize", "potato"],
+  green: ["cabbage", "kale"],
+  brown: ["potato", "beans"],
+  pale: ["rice", "onion"],
+  dark: ["beans"],
 };
 
 function classify(r: number, g: number, b: number): ColourClass {

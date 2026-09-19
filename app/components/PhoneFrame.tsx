@@ -52,8 +52,7 @@ export default function PhoneFrame({ size, onSize, children }: { size: ScreenSiz
       <aside className="side">
         <h1>Mizani</h1>
         <p>
-          Clear farm-price information for keypad phones at the Busia border (Kenya–Uganda), with buyer posts
-          that sellers can answer by phone.
+          Clear WFP Kenya market prices for keypad phones, with buyer posts that sellers can answer by phone.
         </p>
         <h2>Keys</h2>
         <ul>
@@ -61,7 +60,6 @@ export default function PhoneFrame({ size, onSize, children }: { size: ScreenSiz
           <li><kbd>1</kbd>–<kbd>4</kbd> opens a product action</li>
           <li><kbd>Esc</kbd> or <kbd>Q</kbd> left soft key</li>
           <li><kbd>F12</kbd> or <kbd>W</kbd> right soft key (back / clear)</li>
-          <li><kbd>#</kbd> switches KSh / USh on the price screen</li>
         </ul>
         <h2>Screen</h2>
         <button type="button" className="opt" aria-pressed={size === "qv"} onClick={() => onSize("qv")}>QVGA 240×320</button>
@@ -69,12 +67,12 @@ export default function PhoneFrame({ size, onSize, children }: { size: ScreenSiz
         <h2>Try this</h2>
         <ul>
           <li>Choose Maize with the arrows and <kbd>Enter</kbd></li>
-          <li>Press <kbd>1</kbd> for today&apos;s price</li>
+          <li>Press <kbd>1</kbd> for the latest WFP price</li>
           <li>Press <kbd>2</kbd> for buyers on the map</li>
           <li>Press <kbd>4</kbd> to publish a three-day buyer post</li>
         </ul>
         <p style={{ marginTop: 14, fontSize: 12, color: "#7f958a" }}>
-          Demo data. On a Cloud Phone the app fills the 240×320 screen and this frame is not shown
+          Prices and history use actual WFP Kenya observations. Buyer posts remain demo data. On a Cloud Phone the app fills the 240×320 screen and this frame is not shown
           (add <code>?bare=1</code> to see that here).
         </p>
       </aside>

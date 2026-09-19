@@ -31,8 +31,9 @@ describe("the shipped label table", () => {
     labels: { id: string; vec: number[] }[];
     negatives: number[][];
   };
-  it("covers exactly the catalog", () => {
-    expect(shipped.labels.map((l) => l.id).sort()).toEqual(COMMODITIES.map((c) => c.id).sort());
+  it("covers every photo-recognizable catalog item", () => {
+    const shippedIds = new Set(shipped.labels.map((l) => l.id));
+    expect(COMMODITIES.filter((c) => c.photo).every((c) => shippedIds.has(c.id))).toBe(true);
   });
   it("holds unit-length vectors of the model's width", () => {
     for (const vec of [...shipped.labels.map((l) => l.vec), ...shipped.negatives]) {

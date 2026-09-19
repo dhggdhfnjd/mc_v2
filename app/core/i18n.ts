@@ -12,7 +12,10 @@ const en = {
   text: "Text", filter: "Food", pickFood: "Pick the food how?", pickOne: "Press a number",
   country: "Country", bestBuyer: "Best buyer", langCountry: "Language & country",
   pickArea: "Where do you trade?",
-  official: "Official", traders: "Traders", notEnough: "Not enough reports yet", days7: "7 days", grade: "Grade", old: "old",
+  official: "WFP price", traders: "Traders", notEnough: "Not enough data", days7: "Last report", grade: "Grade", old: "old",
+  wholesale: "Wholesale", actual: "actual", sourcePack: "Source pack", total: "total", sinceLast: "Since last report",
+  higher: "Higher", lower: "Lower", same: "Same", comparedWith: "Compared with", observations: "Reports",
+  months: "months", vsLastYear: "Vs last year", missingMonths: "Missing months stay blank",
   sell: "Sell", buy: "Buy", market: "Market", theirOffer: "Their offer", net: "net",
   finalPrice: "Final price", noDeal: "No deal",
   photoAdded: "Photo added ✓",
@@ -31,7 +34,7 @@ const en = {
   closeAsk: "Close this post?",
   unavailable: "Not supported on this phone",
   step: "Step", required: "Complete the highlighted field", buyerPosts: "buyers",
-  editHint: "↑↓ field · type numbers · OK",
+  editHint: "↑↓ field · ← delete · OK",
   nearMe: "Near me", locating: "Finding you…", locate: "Locate", setArea: "Use this",
   noMarketNear: "No market within 100 km", nearest: "Nearest", gps: "GPS", demoLoc: "Demo location", noGps: "No GPS: your area",
   fromWhere: "From where?", myLocation: "My location", pickCity: "Choose city",
@@ -61,7 +64,10 @@ const sw: Dict = {
   text: "Maandishi", filter: "Chakula", pickFood: "Chagua vipi?", pickOne: "Bonyeza namba",
   country: "Nchi", bestBuyer: "Mnunuzi bora", langCountry: "Lugha na nchi", page: "ukurasa",
   pickArea: "Unafanya biashara wapi?",
-  official: "Rasmi", traders: "Wafanyabiashara", notEnough: "Ripoti hazitoshi bado", days7: "Siku 7", grade: "Daraja", old: "zamani",
+  official: "Bei ya WFP", traders: "Wafanyabiashara", notEnough: "Data haitoshi", days7: "Ripoti iliyopita", grade: "Daraja", old: "zamani",
+  wholesale: "Jumla", actual: "halisi", sourcePack: "Kifurushi", total: "jumla", sinceLast: "Tangu ripoti iliyopita",
+  higher: "Juu", lower: "Chini", same: "Sawa", comparedWith: "Ikilinganishwa na", observations: "Ripoti",
+  months: "miezi", vsLastYear: "Dhidi ya mwaka jana", missingMonths: "Miezi isiyo na data iko wazi",
   sell: "Uza", buy: "Nunua", market: "Soko", theirOffer: "Bei yao", net: "baki",
   finalPrice: "Bei ya mwisho", noDeal: "Hapana",
   photoAdded: "Picha imeongezwa ✓",
@@ -79,7 +85,7 @@ const sw: Dict = {
   closeAsk: "Funga tangazo hili?",
   unavailable: "Simu hii haiwezi kutumia",
   step: "Hatua", required: "Jaza sehemu iliyoangaziwa", buyerPosts: "wanunuzi",
-  editHint: "↑↓ sehemu · namba · Sawa",
+  editHint: "↑↓ sehemu · ← futa · Sawa",
   nearMe: "Karibu nami", locating: "Inakutafuta…", locate: "Tafuta", setArea: "Tumia hii",
   noMarketNear: "Hakuna soko ndani ya km 100", nearest: "Karibu zaidi", demoLoc: "Mahali pa demo", noGps: "Hakuna GPS: eneo lako",
   fromWhere: "Kutoka wapi?", myLocation: "Mahali pangu", pickCity: "Chagua mji",
@@ -103,4 +109,9 @@ export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "
 export function shortDate(at: number): string {
   const d = new Date(at);
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
+export function monthYear(at: number): string {
+  const d = new Date(at);
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }

@@ -1,70 +1,47 @@
 "use client";
 
-// L2 NOW PRICE VIEW — the two reference prices side by side: the official per-kg price on top,
-// always with its date, and the traders' reported price with confidence bars below.
-// ◀▶ changes the unit so the lot price is read straight off the screen, ▲▼ the grade,
-// # flips to the other currency. The left soft key returns to the product grid.
+// Latest actual WFP wholesale observation. The selected market is the highest normalized price
+// among markets reporting on the commodity's latest observation date.
 
-import { useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
-import { Bars, Hr, Row } from "../components/ui";
-import { ageText, display, other } from "../core/display";
-import { shortDate } from "../core/i18n";
+import { Hr, Row } from "../components/ui";
+import { display } from "../core/display";
+import { monthYear } from "../core/i18n";
 import type { Key } from "../core/keypad";
 import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
 import { useApi } from "../core/useApi";
 import { getPrices } from "../lib/api";
 import { commodity, market } from "../lib/catalog";
-import { fmt } from "../lib/money";
+
+const amount = (n: number) => Math.round(n).toLocaleString("en-KE");
 
 export default function Price({ active, params }: ScreenProps) {
   const nav = useNav();
   const { settings, t } = useSettings();
   const c = commodity((params.commodityId as string | undefined) ?? settings.foodId);
-  const marketId = settings.marketId ?? "busia-ke";
-  const m = market(marketId);
-
-  const [unitIdx, setUnitIdx] = useState(0);
-  const [grade, setGrade] = useState(0);
-  const [altCur, setAltCur] = useState(false);
-
-  const { data, staleAt, error, reload } = useApi(`prices.${c.id}.${marketId}.${grade}`, () => getPrices(c.id, marketId, grade), [c.id, marketId, grade]);
-  const unit = c.units[unitIdx];
-  const name = settings.lang === "sw" ? c.sw : c.en;
+  const m = market(c.priceMarketId);
+  const money = display("KES", 1);
+  const { data, staleAt, error, reload } = useApi(`wfp-price.${c.id}`, () => getPrices(c.id), [c.id]);
 
   const onKey = (key: Key): boolean => {
-    switch (key) {
-      case "Left":
-      case "Right":
-        return setUnitIdx((i) => (i + (key === "Right" ? 1 : c.units.length - 1)) % c.units.length), true;
-      case "Up":
-      case "Down":
-        return setGrade((g) => (g + (key === "Down" ? 1 : c.grades.length - 1)) % c.grades.length), true;
-      case "#":
-        return setAltCur((a) => !a), true;
-      case "LSK":
-        return nav.home(), true;
-      case "OK":
-        if (error) reload();
-        return true;
-      default:
-        return false;
-    }
+    if (key === "LSK") return nav.home(), true;
+    if (key === "OK" && error) return reload(), true;
+    return false;
   };
 
-  const cur = altCur ? other(m.currency) : m.currency;
-  const d = display(cur, data?.kesToUgx ?? 1);
-  const alt = display(other(cur), data?.kesToUgx ?? 1);
+  const diffC = data?.previousPriceC === null || data?.previousPriceC === undefined ? null : data.priceC - data.previousPriceC;
+  const direction = diffC === null || Math.abs(diffC) < 1 ? t("same") : diffC > 0 ? t("higher") : t("lower");
+  const sourcePackage = data ? c.units.find((u) => u.kg === data.unitKg && u.id !== "kg")?.label ?? data.unitLabel : "";
 
   return (
     <Screen
       active={active}
-      title={`${c.icon} ${name}`}
+      title={`${c.icon} ${settings.lang === "sw" ? c.sw : c.en}`}
       sub={m.name}
       soft={{ l: t("products"), c: error ? t("retry") : t("ok") }}
       onKey={onKey}
-      notice={staleAt ? `${t("lastUpdated")} ${shortDate(staleAt)}` : null}
+      notice={staleAt ? `${t("lastUpdated")} ${monthYear(staleAt)}` : null}
     >
       {error ? (
         <div className="vd idle">{t("netError")}</div>
@@ -72,35 +49,23 @@ export default function Price({ active, params }: ScreenProps) {
         <div className="mut">Loading…</div>
       ) : (
         <>
-          <Row l={t("official")} big r={<>{d.sym} {d.perKg(data.govC)}<small> /kg</small></>} />
+          <Row l={t("official")} big r={<>KSh {money.perKg(data.priceC)}<small> /kg</small></>} />
           <div className="mut" style={{ textAlign: "right" }}>
-            {data.source} · {shortDate(data.officialAt)}
-            {data.officialOld ? <span className="tag-old">{t("old")}</span> : null}
+            {monthYear(data.observedAt)}
           </div>
-          {data.crowd && data.crowd.confidence > 0 ? (
-            <>
-              <Row l={t("traders")} big r={<>{d.sym} {d.perKg(data.crowd.medianC)}<small> /kg</small></>} />
-              <div className="mut" style={{ textAlign: "right" }}>
-                <Bars n={data.crowd.confidence} />
-                {data.crowd.reporters} {t("traders").toLowerCase()} · {ageText(data.crowd.latestAgeDays)}
-              </div>
-            </>
-          ) : (
-            <Row l={t("traders")} r={<span className="mut">{t("notEnough")}</span>} />
-          )}
+          <Row l={`${sourcePackage} ${t("total")}`} r={<>KSh {amount(data.packagePriceKes)}</>} />
           <Hr />
-          <div className="opt"><Row
-            mut
-            l={<>{t("days7")} <span className={data.trend7 >= 0 ? "up" : "dn"}>{data.trend7 >= 0 ? "▲ +" : "▼ "}{(data.trend7 * 100).toFixed(0)}%</span></>}
-            r={<>≈ {alt.sym} {alt.perKg(data.band.refC)} · #</>}
-          /></div>
-          <Hr />
-          <Row l={<>◀ {unit.label} ▶</>} r={<>▲▼ <span className="only-qv">{t("grade")} </span><span className="only-qq">G</span>{grade + 1}</>} />
           <Row
-            l={<b>{fmt(unit.kg)} kg</b>}
-            big
-            r={<>{d.sym} {d.amt(Math.round((data.govC * unit.kg) / 100))}</>}
+            l={t("sinceLast")}
+            r={diffC === null ? <span className="mut">{t("notEnough")}</span> : (
+              <span className={diffC > 0 ? "up" : diffC < 0 ? "dn" : undefined}>
+                {diffC > 0 ? "▲ " : diffC < 0 ? "▼ " : ""}{direction}
+              </span>
+            )}
           />
+          {diffC !== null && data.previousAt ? (
+            <Row mut l={`${t("comparedWith")} ${monthYear(data.previousAt)}`} r={`${diffC >= 0 ? "+" : "−"} KSh ${money.perKg(Math.abs(diffC))}/kg`} />
+          ) : null}
         </>
       )}
     </Screen>

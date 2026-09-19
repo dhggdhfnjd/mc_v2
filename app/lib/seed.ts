@@ -106,30 +106,37 @@ export function seedReputation(deviceId: string): number {
 
 const BUYERS = ["Posho mill", "Secondary school", "Hotel kitchen", "Wholesaler", "Cereal store", "Hospital kitchen", "Supermarket", "Food stall"];
 const LOTS = [200, 300, 500, 800, 1000, 1500, 2000];
+// Expanding the real market catalog must not make dozens of fictional buyers appear. Demo posts
+// stay in a small, explicit set of markets and are separate from the 22 valid posting locations.
+const DEMO_DEMAND_MARKETS = ["5671", "4626", "5666"];
 
 /** demo account names, shaped like the ones app/lib/auth.ts would accept from a real trader */
 const demoUsername = (buyer: string, marketId: string) =>
-  `${buyer.toLowerCase().replace(/[^a-z0-9]+/g, "_")}${(hash(buyer + marketId) % 90) + 10}`;
+  `${buyer.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 10)}${(hash(buyer + marketId) % 90) + 10}`;
 
 export function seedDemands(commodityId: string, now: number): Demand[] {
   const rnd = prng(`demand:${commodityId}`);
   const out: Demand[] = [];
-  MARKETS.forEach((m, i) => {
-    if (rnd() < 0.45) return;
+  DEMO_DEMAND_MARKETS.forEach((marketId, marketIndex) => {
+    const m = MARKETS.find((candidate) => candidate.id === marketId);
+    if (!m) return;
     const local = govTodayC(commodityId, m.id);
-    const buyer = BUYERS[Math.floor(rnd() * BUYERS.length)];
-    out.push({
-      id: `dm-${commodityId}-${m.id}`,
-      username: demoUsername(buyer, m.id),
-      buyer,
-      phone: `0700 000 ${String(100 + ((hash(commodityId + m.id) + i) % 900))}`, // demo numbers only
-      commodityId,
-      marketId: m.id,
-      kg: LOTS[Math.floor(rnd() * LOTS.length)],
-      bidC: Math.round(local * (1.03 + rnd() * 0.1)),
-      expiresAt: now + Math.floor((1 + rnd() * 5) * DAY),
-      createdAt: now - Math.floor(rnd() * DAY),
-    });
+    const count = 1 + ((hash(`${commodityId}:${marketId}`) + marketIndex) % 3);
+    for (let i = 0; i < count; i++) {
+      const buyer = BUYERS[(Math.floor(rnd() * BUYERS.length) + i) % BUYERS.length];
+      out.push({
+        id: `dm-${commodityId}-${m.id}-${i}`,
+        username: demoUsername(`${buyer}-${i}`, m.id),
+        buyer,
+        phone: `0700 000 ${String(100 + ((hash(commodityId + m.id + i) + marketIndex) % 900))}`, // demo numbers only
+        commodityId,
+        marketId: m.id,
+        kg: LOTS[Math.floor(rnd() * LOTS.length)],
+        bidC: Math.round(local * (1.03 + rnd() * 0.1)),
+        expiresAt: now + Math.floor((1 + rnd() * 5) * DAY),
+        createdAt: now - Math.floor(rnd() * DAY),
+      });
+    }
   });
   return out;
 }

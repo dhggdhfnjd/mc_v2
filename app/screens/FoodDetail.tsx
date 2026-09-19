@@ -9,7 +9,7 @@ import type { TKey } from "../core/i18n";
 import { isDigit, type Key } from "../core/keypad";
 import { useNav, type ScreenName } from "../core/router";
 import { useSettings } from "../core/settings";
-import { commodity, market } from "../lib/catalog";
+import { commodity, DEFAULT_MARKET_ID, market } from "../lib/catalog";
 
 const ACTIONS: { icon: string; label: TKey; screen: ScreenName }[] = [
   { icon: "💰", label: "nowPrice", screen: "price" },
@@ -50,7 +50,7 @@ export default function FoodDetail({ active, params }: ScreenProps) {
     <Screen
       active={active}
       title={`${c.icon} ${name}`}
-      sub={market(settings.marketId ?? "busia-ke").name}
+      sub={market(settings.marketId ?? DEFAULT_MARKET_ID).name}
       soft={{ c: t("ok") }}
       onKey={onKey}
     >

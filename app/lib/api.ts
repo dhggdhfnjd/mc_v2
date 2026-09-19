@@ -4,14 +4,15 @@
 // so swapping in `fetch(API_BASE + …)` later does not touch a single screen.
 
 import { hashPassword, newSalt, newToken, normalizeUsername, validatePassword, validateUsername, verifyPassword, type AuthCode } from "./auth";
-import { COMMODITIES, KES_TO_UGX, MARKETS, commodity, market, routeCost } from "./catalog";
-import { fairBand, netPriceC } from "./money";
-import { officialMeta, officialSeries, seedDemands, seedReports, seedReputation } from "./seed";
-import { aggregate } from "./trust";
-import type { Account, Band, CrowdReport, CrowdStat, Demand, Session } from "./types";
+import { COMMODITIES, MARKETS, commodity, market, routeCost } from "./catalog";
+import { netPriceC } from "./money";
+import { seedDemands } from "./seed";
+import type { Account, Demand, Session } from "./types";
+import { wfpSeries } from "./wfp";
 
 const DAY = 86_400_000;
 const KEY = "mz.v2.";
+const VALID_MARKET_IDS = new Set(MARKETS.map((m) => m.id));
 
 // ---------- tiny persistence layer (works without localStorage: tests, private mode) ----------
 const memory = new Map<string, string>();
@@ -151,98 +152,134 @@ export async function logout(): Promise<void> {
 export interface PriceBundle {
   commodityId: string;
   marketId: string;
-  govC: number;
+  /** Normalized WFP price, KES cents per kg. */
+  priceC: number;
+  /** Original source price and package, shown together for transparency. */
+  packagePriceKes: number;
+  unitLabel: string;
+  unitKg: number;
   source: string;
-  officialAt: number;
-  officialOld: boolean;
-  crowd: CrowdStat | null;
-  band: Band;
-  trend7: number;
-  vol30: number;
-  kesToUgx: number;
+  priceType: "Wholesale";
+  priceFlag: "actual";
+  observedAt: number;
+  old: boolean;
+  previousAt: number | null;
+  previousPriceC: number | null;
+  changeSincePrevious: number | null;
+  yearAgoAt: number | null;
+  yearAgoPriceC: number | null;
+  changeSinceYearAgo: number | null;
   fetchedAt: number;
 }
 
-function allReports(commodityId: string, marketId: string, now: number): CrowdReport[] {
-  return seedReports(commodityId, marketId, now);
-}
+const sourceAt = (date: string) => Date.parse(`${date}T00:00:00Z`);
+const normalizedC = (packagePriceKes: number, unitKg: number) => Math.round((packagePriceKes * 100) / unitKg);
 
-function crowdStat(commodityId: string, marketId: string, now: number): CrowdStat | null {
-  return aggregate(allReports(commodityId, marketId, now), now, seedReputation);
-}
-
-function bundle(commodityId: string, marketId: string, grade: number, now: number): PriceBundle {
-  const series = officialSeries(commodityId, marketId, 31, now);
-  const mean = series.reduce((s, v) => s + v, 0) / series.length;
-  const vol30 = Math.sqrt(series.reduce((s, v) => s + (v - mean) ** 2, 0) / series.length) / mean;
-  const meta = officialMeta(marketId, now);
-  const officialOld = now - meta.at > 3 * DAY;
-  const crowd = crowdStat(commodityId, marketId, now);
-  const govC = series[0];
-  const factor = commodity(commodityId).grades[grade] ?? 1;
+function bundle(commodityId: string, now: number): PriceBundle {
+  const series = wfpSeries(commodityId);
+  const latest = series.observations.at(-1)!;
+  const previous = series.observations.at(-2) ?? null;
+  const observedAt = sourceAt(latest.date);
+  const priceC = normalizedC(latest.packagePriceKes, series.unitKg);
+  const previousPriceC = previous ? normalizedC(previous.packagePriceKes, series.unitKg) : null;
+  const latestDate = new Date(observedAt);
+  const yearAgoDate = `${latestDate.getUTCFullYear() - 1}-${String(latestDate.getUTCMonth() + 1).padStart(2, "0")}-${String(latestDate.getUTCDate()).padStart(2, "0")}`;
+  const yearAgo = series.observations.find((x) => x.date === yearAgoDate) ?? null;
+  const yearAgoPriceC = yearAgo ? normalizedC(yearAgo.packagePriceKes, series.unitKg) : null;
   return {
     commodityId,
-    marketId,
-    govC: Math.round(govC * factor),
-    source: meta.source,
-    officialAt: meta.at,
-    officialOld,
-    crowd: crowd && {
-      ...crowd,
-      medianC: Math.round(crowd.medianC * factor),
-      p25C: Math.round(crowd.p25C * factor),
-      p75C: Math.round(crowd.p75C * factor),
-    },
-    // stale official data deserves a wider range
-    band: fairBand(govC, crowd, officialOld ? Math.max(vol30, 0.08) : vol30, factor),
-    trend7: series[7] > 0 ? series[0] / series[7] - 1 : 0,
-    vol30,
-    kesToUgx: KES_TO_UGX,
+    marketId: series.marketId,
+    priceC,
+    packagePriceKes: latest.packagePriceKes,
+    unitLabel: series.unitLabel,
+    unitKg: series.unitKg,
+    source: "WFP",
+    priceType: series.priceType,
+    priceFlag: series.priceFlag,
+    observedAt,
+    old: now - observedAt > 90 * DAY,
+    previousAt: previous ? sourceAt(previous.date) : null,
+    previousPriceC,
+    changeSincePrevious: previousPriceC ? priceC / previousPriceC - 1 : null,
+    yearAgoAt: yearAgo ? sourceAt(yearAgo.date) : null,
+    yearAgoPriceC,
+    changeSinceYearAgo: yearAgoPriceC ? priceC / yearAgoPriceC - 1 : null,
     fetchedAt: now,
   };
 }
 
-/** GET /v1/prices?c&m&g — one call feeds the price, calculator and show-card screens */
-export const getPrices = (commodityId: string, marketId: string, grade = 0) =>
-  call(() => bundle(commodityId, marketId, grade, Date.now()));
+/** Latest actual WFP wholesale observation at the selected highest-price market. */
+export const getPrices = (commodityId: string) => call(() => bundle(commodityId, Date.now()));
 
 export interface HistoryData {
-  points: number[]; // oldest → newest, at most 24
+  /** One slot per calendar month; null means WFP has no observation for that month. */
+  points: (number | null)[];
   minC: number;
   maxC: number;
   avgC: number;
   nowC: number;
   change: number;
+  fromAt: number;
+  toAt: number;
+  observations: number;
+  expectedMonths: number;
+  marketId: string;
+  yearAgoAt: number | null;
+  changeSinceYearAgo: number | null;
 }
 
-function historyOf(commodityId: string, marketId: string, days: number): HistoryData {
-  {
-    const series = officialSeries(commodityId, marketId, days + 1, Date.now()).reverse();
-    const bucket = Math.max(1, Math.ceil(series.length / 24));
-    const points: number[] = [];
-    for (let i = 0; i < series.length; i += bucket) {
-      const slice = series.slice(i, i + bucket);
-      points.push(Math.round(slice.reduce((s, v) => s + v, 0) / slice.length));
-    }
-    points[points.length - 1] = series[series.length - 1];
-    return {
-      points,
-      minC: Math.min(...series),
-      maxC: Math.max(...series),
-      avgC: Math.round(series.reduce((s, v) => s + v, 0) / series.length),
-      nowC: series[series.length - 1],
-      change: series[series.length - 1] / series[0] - 1,
-    };
+const monthKey = (at: number) => {
+  const d = new Date(at);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+};
+
+function historyOf(commodityId: string, months: number): HistoryData {
+  const series = wfpSeries(commodityId);
+  const latest = series.observations.at(-1)!;
+  const latestAt = sourceAt(latest.date);
+  const end = new Date(latestAt);
+  const firstMonth = Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - months + 1, 15);
+  const actual = series.observations
+    .map((x) => ({ at: sourceAt(x.date), priceC: normalizedC(x.packagePriceKes, series.unitKg) }))
+    .filter((x) => x.at >= firstMonth && x.at <= latestAt);
+  const byMonth = new Map(actual.map((x) => [monthKey(x.at), x.priceC]));
+  const points: (number | null)[] = [];
+  for (let i = 0; i < months; i++) {
+    const at = Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - months + 1 + i, 15);
+    points.push(byMonth.get(monthKey(at)) ?? null);
   }
+  const values = actual.map((x) => x.priceC);
+  const first = values[0];
+  const last = values[values.length - 1];
+  const yearAgoAt = Date.UTC(end.getUTCFullYear() - 1, end.getUTCMonth(), end.getUTCDate());
+  const yearAgoPriceC = series.observations
+    .map((x) => ({ at: sourceAt(x.date), priceC: normalizedC(x.packagePriceKes, series.unitKg) }))
+    .find((x) => x.at === yearAgoAt)?.priceC ?? null;
+  return {
+    points,
+    minC: Math.min(...values),
+    maxC: Math.max(...values),
+    avgC: Math.round(values.reduce((s, v) => s + v, 0) / values.length),
+    nowC: last,
+    change: first > 0 ? last / first - 1 : 0,
+    fromAt: firstMonth,
+    toAt: latestAt,
+    observations: values.length,
+    expectedMonths: months,
+    marketId: series.marketId,
+    yearAgoAt: yearAgoPriceC === null ? null : yearAgoAt,
+    changeSinceYearAgo: yearAgoPriceC ? last / yearAgoPriceC - 1 : null,
+  };
 }
 
-/** GET /v1/trends/history?c&m&range — downsampled: a 240 px screen cannot show more */
-export const getHistory = (commodityId: string, marketId: string, days: number) =>
-  call(() => historyOf(commodityId, marketId, days));
+/** Monthly WFP history; missing months remain null instead of being interpolated. */
+export const getHistory = (commodityId: string, months: number) => call(() => historyOf(commodityId, months));
 
 function openDemands(commodityId: string, now: number): Demand[] {
   const mine = read<Demand[]>("demands", [])
-    .filter((d) => d.commodityId === commodityId)
+    // Old demo releases used invented border markets. Never place those posts at a fallback
+    // coordinate: only posts tied to one of the actual WFP markets may reach the map.
+    .filter((d) => d.commodityId === commodityId && VALID_MARKET_IDS.has(d.marketId))
     // posts written before accounts existed still have to render
     .map((d) => ({ ...d, username: d.username || currentSession()?.username || "me" }));
   return [...mine, ...seedDemands(commodityId, now)].filter((d) => d.expiresAt > now);
@@ -282,7 +319,7 @@ export const getDemands = (commodityId: string, fromId: string) =>
 
 // ---------- buyer posts ----------
 export const getMyDemand = (commodityId: string) =>
-  call(() => read<Demand[]>("demands", []).find((d) => d.commodityId === commodityId && d.expiresAt > Date.now()) ?? null);
+  call(() => read<Demand[]>("demands", []).find((d) => d.commodityId === commodityId && VALID_MARKET_IDS.has(d.marketId) && d.expiresAt > Date.now()) ?? null);
 
 /** One active post per commodity. Re-posting edits and renews it for three days. */
 export const postDemand = (input: { commodityId: string; marketId: string; kg: number; bidC: number; days: number; phone: string }) =>

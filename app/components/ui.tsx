@@ -120,18 +120,80 @@ export function Bars({ n }: { n: 0 | 1 | 2 | 3 }) {
   );
 }
 
-/** static sparkline — SVG travels to the handset as cheap vector commands */
-export function Spark({ points, w = 224, h = 56 }: { points: number[]; w?: number; h?: number }) {
-  if (points.length < 2) return null;
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const span = max - min || 1;
-  const xy = points.map((p, i) => [4 + (i * (w - 8)) / (points.length - 1), h - 5 - ((p - min) / span) * (h - 10)] as const);
-  const last = xy[xy.length - 1];
+function priceStep(spanKes: number): number {
+  const target = Math.max(10, spanKes / 4);
+  const scale = 10 ** Math.floor(Math.log10(target));
+  const normalized = target / scale;
+  const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return Math.max(10, nice * scale);
+}
+
+/** Monthly price chart. Nulls create visible gaps instead of inventing missing prices. */
+export function Spark({ points, fromAt, toAt, w = 224, h = 92 }: {
+  points: (number | null)[];
+  fromAt?: number;
+  toAt?: number;
+  w?: number;
+  h?: number;
+}) {
+  const values = points.filter((p): p is number => p !== null);
+  if (values.length < 2) return null;
+  const rawMin = Math.min(...values) / 100;
+  const rawMax = Math.max(...values) / 100;
+  const step = priceStep(rawMax - rawMin);
+  let minKes = Math.floor(rawMin / step) * step;
+  let maxKes = Math.ceil(rawMax / step) * step;
+  if (minKes === maxKes) {
+    minKes = Math.max(0, minKes - step);
+    maxKes += step;
+  }
+  const ticks: number[] = [];
+  for (let value = minKes; value <= maxKes + step / 2; value += step) ticks.push(value);
+
+  const left = 35;
+  const right = 4;
+  const top = 14;
+  const bottom = 16;
+  const plotW = w - left - right;
+  const plotH = h - top - bottom;
+  const y = (priceC: number) => top + ((maxKes - priceC / 100) / (maxKes - minKes)) * plotH;
+  const xy = points.map((p, i) => p === null ? null : [left + (i * plotW) / (points.length - 1), y(p)] as const);
+  const segments: (readonly (readonly [number, number])[])[] = [];
+  let segment: (readonly [number, number])[] = [];
+  for (const point of xy) {
+    if (point) segment.push(point);
+    else if (segment.length) {
+      segments.push(segment);
+      segment = [];
+    }
+  }
+  if (segment.length) segments.push(segment);
+  const last = [...xy].reverse().find((p): p is readonly [number, number] => p !== null)!;
+  const dateLabel = (at: number) => {
+    const date = new Date(at);
+    return `${date.toLocaleString("en", { month: "short", timeZone: "UTC" })} ${String(date.getUTCFullYear()).slice(-2)}`;
+  };
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} className="spark" role="img" aria-label="price trend">
-      <polyline points={xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ")} fill="none" stroke="#5BE08A" strokeWidth="2" />
+      <text x="1" y="9" fill="#8FAE98" fontSize="8">KSh/kg</text>
+      {ticks.map((tick) => {
+        const ty = top + ((maxKes - tick) / (maxKes - minKes)) * plotH;
+        return (
+          <g key={tick}>
+            <line x1={left} y1={ty} x2={w - right} y2={ty} stroke="#2C4436" strokeWidth="0.7" />
+            <text x={left - 3} y={ty + 3} fill="#8FAE98" fontSize="8" textAnchor="end">{tick}</text>
+          </g>
+        );
+      })}
+      <line x1={left} y1={top} x2={left} y2={top + plotH} stroke="#5E7A68" strokeWidth="0.8" />
+      <line x1={left} y1={top + plotH} x2={w - right} y2={top + plotH} stroke="#5E7A68" strokeWidth="0.8" />
+      {segments.map((line, i) => line.length > 1 ? (
+        <polyline key={i} points={line.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ")} fill="none" stroke="#5BE08A" strokeWidth="2" />
+      ) : null)}
+      {xy.map((p, i) => p ? <circle key={i} cx={p[0]} cy={p[1]} r="1.5" fill="#5BE08A" /> : null)}
       <circle cx={last[0]} cy={last[1]} r="3.5" fill="#FFD23F" />
+      {fromAt ? <text x={left} y={h - 2} fill="#8FAE98" fontSize="8">{dateLabel(fromAt)}</text> : null}
+      {toAt ? <text x={w - right} y={h - 2} fill="#8FAE98" fontSize="8" textAnchor="end">{dateLabel(toAt)}</text> : null}
     </svg>
   );
 }

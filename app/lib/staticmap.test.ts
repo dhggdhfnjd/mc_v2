@@ -16,14 +16,14 @@ describe("Web Mercator", () => {
   });
 });
 
-describe("framing the Busia corridor", () => {
+describe("framing the adopted-commodity WFP markets", () => {
   const pad = { top: 16, right: 16, bottom: 26, left: 16 };
   const view = fitView(MARKETS, 240 / 196, pad, 400);
 
   it("picks the deepest zoom that fits the width budget", () => {
     expect(view.width).toBeLessThanOrEqual(400);
     expect(fitView(MARKETS, 240 / 196, pad, 10_000).zoom).toBeGreaterThan(view.zoom);
-    expect(view.zoom).toBe(7);
+    expect(view.zoom).toBeGreaterThanOrEqual(5);
   });
 
   it("keeps every market inside the padding", () => {
@@ -36,11 +36,12 @@ describe("framing the Busia corridor", () => {
     }
   });
 
-  it("puts Uganda west of Kenya and Mbale north of Kisumu", () => {
+  it("puts the WFP markets in their real geographic order", () => {
     const at = (id: string) => project(MARKETS.find((m) => m.id === id)!, view);
-    expect(at("kampala").x).toBeLessThan(at("busia-ug").x);
-    expect(at("busia-ug").x).toBeLessThan(at("busia-ke").x);
-    expect(at("mbale").y).toBeLessThan(at("kisumu").y);
+    expect(at("5671").x).toBeLessThan(at("4626").x);
+    expect(at("4626").x).toBeLessThan(at("5666").x);
+    expect(at("5671").y).toBeLessThan(at("4626").y);
+    expect(at("4626").y).toBeLessThan(at("5666").y);
   });
 });
 

@@ -13,7 +13,7 @@ import { useNav } from "../core/router";
 import { useSession } from "../core/session";
 import { useSettings } from "../core/settings";
 import { closeDemand, getMyDemand, postDemand } from "../lib/api";
-import { KES_TO_UGX, MARKETS, commodity, market } from "../lib/catalog";
+import { DEFAULT_MARKET_ID, KES_TO_UGX, MARKETS, commodity, market } from "../lib/catalog";
 import type { Demand } from "../lib/types";
 
 const DAYS = 3;
@@ -24,7 +24,7 @@ export default function DemandPost({ active, params }: ScreenProps) {
   const { settings, update, t } = useSettings();
   const { user } = useSession();
   const c = commodity((params.commodityId as string | undefined) ?? settings.foodId);
-  const startMarket = Math.max(0, MARKETS.findIndex((m) => m.id === (settings.marketId ?? "busia-ke")));
+  const startMarket = Math.max(0, MARKETS.findIndex((m) => m.id === (settings.marketId ?? DEFAULT_MARKET_ID)));
   const [marketIdx, setMarketIdx] = useState(startMarket);
   const [kg, setKg] = useState("");
   const [price, setPrice] = useState("");
@@ -140,11 +140,12 @@ export default function DemandPost({ active, params }: ScreenProps) {
     }
     if (field === 1 || field === 2 || field === 3) {
       const current = field === 1 ? kg : field === 2 ? price : phone;
+      const inputKey = key === "Left" ? "Del" : key;
       const next = field === 3
-        ? isDigit(key)
-          ? current.length < 15 ? current + key : current
-          : key === "Del" ? current.slice(0, -1) : null
-        : typeDigit(current, key, 7);
+        ? isDigit(inputKey)
+          ? current.length < 15 ? current + inputKey : current
+          : inputKey === "Del" ? current.slice(0, -1) : null
+        : typeDigit(current, inputKey, 7);
       if (next !== null) {
         if (field === 1) setKg(next);
         else if (field === 2) setPrice(next);

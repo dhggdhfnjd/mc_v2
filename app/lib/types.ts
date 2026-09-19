@@ -17,17 +17,26 @@ export interface Commodity {
   en: string;
   sw: string;
   icon: string;
-  /** official wholesale price at Busia KE, KES per kg (demo seed) */
+  /** Latest selected WFP wholesale price, KES per kg; also anchors demo buyer bids. */
   govKes: number;
-  /** price factor per quality grade, grade 1 first */
+  /** Kept for the existing buyer-post demo. WFP price screens do not infer grades. */
   grades: number[];
   /** share of value lost per 100 km of transport */
   perish: number;
   /** 12 monthly price indices, 100 = yearly average */
   season: number[];
   units: UnitDef[];
-  /** multiplier for Ugandan markets (produce that flows from Uganda is cheaper there) */
+  /** Neutral for this Kenya-only WFP catalog; kept for the existing buyer-post demo. */
   ugFactor: number;
+  /** Stable identifiers and labels from the WFP source file. */
+  wfpId: number;
+  sourceName: string;
+  /** Market chosen as the maximum price on this commodity's latest observation date. */
+  priceMarketId: string;
+  /** Number of distinct source months, used to order the home catalog by completeness. */
+  dataMonths: number;
+  /** Whether the shipped image label table can recognize this item. */
+  photo: boolean;
 }
 
 export interface Market {
@@ -37,11 +46,8 @@ export interface Market {
   currency: Currency;
   lat: number;
   lon: number;
-  /** price level relative to Busia KE */
+  /** Demo buyer-post multiplier. WFP prices never use this value. */
   mult: number;
-  /** position on the 240x196 corridor map */
-  x: number;
-  y: number;
 }
 
 export type ReportOrigin = "deal" | "manual";

@@ -12,7 +12,7 @@ import { isDigit, type Key } from "../core/keypad";
 import { demoFix, gpsFix, type Fix } from "../core/location";
 import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
-import { MARKETS, market } from "../lib/catalog";
+import { DEFAULT_MARKET_ID, MARKETS, market } from "../lib/catalog";
 import { fmt } from "../lib/money";
 import { circleBox, distanceKm, fitView, kmPerPx, project, spread, staticMapUrl } from "../lib/staticmap";
 
@@ -37,7 +37,7 @@ export default function Nearby({ active, params }: ScreenProps) {
     setFix(null);
     (async () => {
       const found = demoFix() ?? (await gpsFix());
-      const home = market(settings.marketId ?? "busia-ke");
+      const home = market(settings.marketId ?? DEFAULT_MARKET_ID);
       if (alive) setFix(found ?? { lat: home.lat, lon: home.lon, source: "market" });
     })();
     return () => {
@@ -66,7 +66,7 @@ export default function Nearby({ active, params }: ScreenProps) {
   );
   const inside = byDistance.filter((x) => x.d <= RADIUS_KM);
   const cur = inside[Math.min(sel, inside.length - 1)];
-  // the twin Busia towns are 2 km apart: push their discs apart, with a leader line back
+  // Nearby markets can overlap at this scale: push their discs apart, with a leader line back.
   const discs = useMemo(
     () => (view ? spread(inside.map(({ m }) => ({ id: m.id, ...at(m), ax: at(m).x, ay: at(m).y, r: 8 })), W, H, 2) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps

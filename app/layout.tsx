@@ -5,7 +5,7 @@ const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export const metadata: Metadata = {
   title: "Mizani",
-  description: "Farm prices and buyer posts for keypad phones at the Busia border.",
+  description: "WFP Kenya market prices and buyer posts for keypad phones.",
   manifest: `${base}/manifest.webmanifest`,
   icons: { icon: `${base}/icon-192.png`, apple: `${base}/icon-192.png` },
 };

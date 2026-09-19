@@ -41,9 +41,9 @@ describe("parseCoord", () => {
 });
 
 describe("nearestMarket", () => {
-  it("finds Kisumu from a point just outside it", () => {
+  it("finds Kibuye from a point just outside it", () => {
     const { market, km } = nearestMarket({ lat: -0.1, lon: 34.75 });
-    expect(market.id).toBe("kisumu");
+    expect(market.id).toBe("5671");
     expect(km).toBeLessThan(3);
   });
 });

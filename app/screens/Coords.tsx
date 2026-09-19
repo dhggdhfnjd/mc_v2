@@ -11,7 +11,7 @@ import { Field, Row, useNotice } from "../components/ui";
 import type { Key } from "../core/keypad";
 import { useNav } from "../core/router";
 import { useSettings } from "../core/settings";
-import { market } from "../lib/catalog";
+import { DEFAULT_MARKET_ID, market } from "../lib/catalog";
 import { nearestMarket, parseCoord, typeCoord } from "../lib/coords";
 import { fmt } from "../lib/money";
 
@@ -20,7 +20,7 @@ const LIMITS = [90, 180];
 export default function Coords({ active, params }: ScreenProps) {
   const nav = useNav();
   const { settings, update, t } = useSettings();
-  const start = settings.fix ?? market(settings.marketId ?? "busia-ke");
+  const start = settings.fix ?? market(settings.marketId ?? DEFAULT_MARKET_ID);
   // kept in a ref as well as state: keys can arrive faster than React re-renders, and each one
   // must see the text the previous one produced
   const form = useRef({ values: [start.lat.toFixed(4), start.lon.toFixed(4)], fresh: [true, true], field: 0 });

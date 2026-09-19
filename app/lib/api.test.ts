@@ -28,22 +28,22 @@ describe("accounts", () => {
 describe("buyer posts", () => {
   it("cannot be published without an account", async () => {
     await logout();
-    await expect(postDemand({ commodityId: "melon", marketId: "busia-ke", kg: 100, bidC: 4000, days: 3, phone: "0700000000" }))
+    await expect(postDemand({ commodityId: "maize", marketId: "5671", kg: 100, bidC: 4000, days: 3, phone: "0700000000" }))
       .rejects.toBeInstanceOf(ApiError);
   });
 
   it("upserts one post per commodity without changing the market price", async () => {
     await register("buyer_one", "1234");
-    const before = await getPrices("melon", "busia-ke");
-    const first = await postDemand({ commodityId: "melon", marketId: "busia-ke", kg: 100, bidC: 4000, days: 3, phone: "0700000000" });
-    const edited = await postDemand({ commodityId: "melon", marketId: "kisumu", kg: 200, bidC: 4500, days: 3, phone: "0711111111" });
-    const after = await getPrices("melon", "busia-ke");
+    const before = await getPrices("maize");
+    const first = await postDemand({ commodityId: "maize", marketId: "5671", kg: 100, bidC: 4000, days: 3, phone: "0700000000" });
+    const edited = await postDemand({ commodityId: "maize", marketId: "4626", kg: 200, bidC: 4500, days: 3, phone: "0711111111" });
+    const after = await getPrices("maize");
 
     expect(edited.id).toBe(first.id);
-    expect(await getMyDemand("melon")).toMatchObject({ marketId: "kisumu", kg: 200, phone: "0711111111", username: "buyer_one" });
-    expect(after.crowd?.medianC).toBe(before.crowd?.medianC);
+    expect(await getMyDemand("maize")).toMatchObject({ marketId: "4626", kg: 200, phone: "0711111111", username: "buyer_one" });
+    expect(after.priceC).toBe(before.priceC);
 
     await closeDemand(first.id);
-    expect(await getMyDemand("melon")).toBeNull();
+    expect(await getMyDemand("maize")).toBeNull();
   });
 });
