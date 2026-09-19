@@ -49,7 +49,7 @@ export default function Where({ active }: ScreenProps) {
   return (
     <Screen active={active} title={t("fromWhere")} sub={market(settings.marketId ?? "busia-ke").name} soft={{ c: t("ok") }} onKey={onKey}>
       <Grid items={items} sel={grid.index} cols={2} big />
-      <div className="mut hint">{originLabel(settings, t)}</div>
+      <div className="mut hint">{originLabel(settings)}</div>
     </Screen>
   );
 }

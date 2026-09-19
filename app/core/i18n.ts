@@ -36,7 +36,7 @@ const en = {
   noMarketNear: "No market within 100 km", nearest: "Nearest", gps: "GPS", demoLoc: "Demo location", noGps: "No GPS: your area",
   fromWhere: "From where?", myLocation: "My location", pickCity: "Choose city",
   coords: "Coordinates", latitude: "Latitude", longitude: "Longitude", coordHint: "* = decimal point · # = minus",
-  checkNumbers: "Check the numbers", noBuyersNear: "No buyers within",
+  checkNumbers: "Check the numbers", noBuyersNear: "No buyers within", wholeMap: "Whole map",
 } as const;
 
 type Dict = Record<keyof typeof en, string>;
@@ -73,7 +73,7 @@ const sw: Dict = {
   noMarketNear: "Hakuna soko ndani ya km 100", nearest: "Karibu zaidi", demoLoc: "Mahali pa demo", noGps: "Hakuna GPS: eneo lako",
   fromWhere: "Kutoka wapi?", myLocation: "Mahali pangu", pickCity: "Chagua mji",
   coords: "Viwianishi", latitude: "Latitudo", longitude: "Longitudo", coordHint: "* = nukta · # = hasi",
-  checkNumbers: "Kagua namba", noBuyersNear: "Hakuna wanunuzi ndani ya",
+  checkNumbers: "Kagua namba", noBuyersNear: "Hakuna wanunuzi ndani ya", wholeMap: "Ramani yote",
 };
 
 const DICTS: Record<Lang, Dict> = { en, sw };

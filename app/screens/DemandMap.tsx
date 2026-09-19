@@ -17,7 +17,6 @@
 import { useMemo, useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Row } from "../components/ui";
-import type { TKey } from "../core/i18n";
 import { display } from "../core/display";
 import { isDigit, type Key } from "../core/keypad";
 import { useNav } from "../core/router";
@@ -39,10 +38,10 @@ const PAD = { top: 18, right: 16, bottom: 26, left: 16 };
 const CORRIDOR = fitView(MARKETS, W / H, PAD, 400);
 
 /** one line saying where distances are counted from, for the map and "From where?" */
-export function originLabel(settings: Settings, t: (k: TKey) => string): string {
+export function originLabel(settings: Settings): string {
   const name = market(settings.marketId ?? "busia-ke").name;
-  if (settings.fix?.source === "manual") return `📌 ${settings.fix.lat.toFixed(3)}, ${settings.fix.lon.toFixed(3)} · ${name}`;
-  if (settings.fix) return `📍 ${t("myLocation")} · ${name}`;
+  if (settings.fix?.source === "manual") return `📌 ${settings.fix.lat.toFixed(2)}, ${settings.fix.lon.toFixed(2)}`;
+  if (settings.fix) return `📍 ${name}`;
   return `🏙️ ${name}`;
 }
 
@@ -237,8 +236,8 @@ export default function DemandMap({ active, params }: ScreenProps) {
         {/* key hints lead, like the numbered menus: 0 changes the location, * the view */}
         <Row
           mut
-          l={`0 ${originLabel(settings, t)}`}
-          r={showAll ? `* ${RADIUS_KM} km` : hidden ? `* +${hidden} > ${RADIUS_KM} km` : undefined}
+          l={`0 ${originLabel(settings)}`}
+          r={showAll ? `* ${RADIUS_KM} km` : `* ${t("wholeMap")}${hidden ? ` +${hidden}` : ""}`}
         />
       </div>
     </Screen>
