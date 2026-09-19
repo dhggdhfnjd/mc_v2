@@ -20,7 +20,7 @@ Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, deal 
 
 ## Architecture
 
-- `app/lib/` – pure domain code, no React: `money.ts` (integer money maths, fair band, verdict, counter-offer), `trust.ts` (crowd-price gates, weighted median, confidence), `catalog.ts`, `seed.ts` (deterministic demo data), `api.ts` (Promise API that mirrors the planned REST endpoints; in-process for now), `vision.ts` (photo → crop providers).
+- `app/lib/` – pure domain code, no React: `money.ts` (integer money maths, fair band, verdict, counter-offer), `trust.ts` (crowd-price gates, weighted median, confidence), `catalog.ts`, `seed.ts` (deterministic demo data), `api.ts` (Promise API that mirrors the planned REST endpoints; in-process for now), `vision.ts` (photo → crop: MobileCLIP-S0 zero-shot in the page via ONNX Runtime Web, the same model over HTTP from `server/`, colour histogram as last resort; label table built by `tools/vision/build_label_embeddings.py`).
 - `app/core/` – platform layer: `keypad.ts`, `keys.tsx` (key bus), `router.tsx` (screen stack on the History API so the RSK default `history.back()` pops one screen), `features.ts`, `settings.tsx`, `useApi.ts` (last-good cache fallback), `i18n.ts`, `display.ts`.
 - `app/screens/` – one screen per team decision; registry in `index.ts`.
 - `app/components/` – `Screen` (header/body/soft keys + key registration), `ui` (Row, Field, Bars, Spark), `PhoneFrame` (desktop only).
@@ -31,3 +31,4 @@ Mizani is a Cloud Phone (CloudMosa) widget for keypad phones: farm prices, deal 
 - No LLM or randomness in money paths. Anything that changes `money.ts` or `trust.ts` needs a test.
 - Keep strings short (≈26 characters per line at 240 px). Kiswahili strings need native review.
 - All prices in the prototype are demo data; say so wherever numbers are shown to judges.
+- `public/ort/` is copied from `node_modules` by `scripts/copy-ort.mjs` on install and is git-ignored; `public/models/*.onnx` is committed. Do not switch to the Hub's int8 model: it scores 0% (measured).

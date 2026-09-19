@@ -43,6 +43,27 @@ Every screen implements one decision from the team's 19 Sep 2026 design discussi
 | My deals | D12 | weekly summary, performance against the market, trust stars |
 | Border & FX | — | KSh ↔ USh converter that prices a street exchange rate; EAC Simplified Trade Regime card |
 
+### Photo recognition
+
+`0` on the home screen, or *Menu → Photo*. The photo is classified by a real vision model, **Apple MobileCLIP-S0**, run zero-shot: each of the 18 catalog crops is described in plain English ("tiny dried fish", "unripe green cooking bananas"…), those descriptions are embedded once offline, and at run time the image embedding is compared with them. No training photos are needed, which matters because nothing off the shelf knows omena, matooke or sukuma wiki. Stock YOLO was considered and rejected: its 80 COCO classes contain none of these crops.
+
+| | top-1 | top-3 | non-crop photos rejected |
+| --- | --- | --- | --- |
+| Offline, full-size photos (n = 91) | 84.6% | 97.8% | 6 / 6 |
+| Offline, simulated 0.08 MP keypad camera (320×240, JPEG q55) | 79.1% | 97.8% | 6 / 6 |
+| **In the browser** (ONNX Runtime Web, WASM, 1 thread) | 83.5% | 97.8% | 6 / 6 |
+
+Top-3 is the number that matters: the screen lists three candidates and the trader confirms with one digit. Typical misses are look-alikes (sorghum ↔ millet ↔ beans, ripe bananas ↔ matooke). The photos are 97 hand-curated Wikimedia Commons images, and they guided the prompt wording, so treat the figures as optimistic until field photos exist. About 125 ms per photo on a laptop.
+
+Two ways to run the same model, same label table, same answers:
+
+- **In the page (default).** Image encoder as ONNX with float16 weights and float32 compute (22.9 MB; the 11.8 MB int8 file on the Hub scores 0% — dynamic quantisation breaks this architecture) plus the ONNX Runtime WASM runtime (14 MB), both fetched only when the Photo screen opens. On Cloud Phone the page runs in CloudMosa's data centre, so this costs the handset no data and no CPU.
+- **Behind an API.** `server/` is a FastAPI service exposing `POST /v1/recognize`; build the web app with `NEXT_PUBLIC_API_BASE=<url>` to use it. `server/Dockerfile` runs as a Hugging Face Docker Space or on any container host.
+
+If the model cannot load, the app falls back to a colour histogram and says so on screen. Change what a crop "looks like", or add one, in `tools/vision/build_label_embeddings.py`.
+
+Model © Apple Inc., redistributed under its licence (`public/models/LICENSE-mobileclip.txt`); ONNX export from [Xenova/mobileclip_s0](https://huggingface.co/Xenova/mobileclip_s0).
+
 ### Crowd-price trust (D13–D15)
 
 No identity checks. `app/lib/trust.ts`: reports below half or above double the official price are refused; reports more than 20% from both the official price and the current median are quarantined until two other devices corroborate them; one vote per device; weighted median with a 3-day half-life; behaviour-based reputation (0.3 → 1.0); photo and completed-deal bonuses; buyer and seller medians balanced; nothing is shown below three independent reporters. Try it: report maize at 900 (refused) or 40 (held).
@@ -70,10 +91,12 @@ app/
   core/        platform layer: keypad, key bus, router, feature detection, settings, useApi, i18n
   components/  Screen shell, rows/fields/sparkline, desktop PhoneFrame
   screens/     one file per screen; registry in index.ts
-public/        icons, manifest, service worker
+public/        icons, manifest, service worker, models/ (MobileCLIP image encoder + label table)
+server/        FastAPI version of the recogniser: POST /v1/recognize
+tools/vision/  rebuild the label table, shrink the ONNX weights
 ```
 
-`app/lib/api.ts` exposes Promise functions named after the planned REST endpoints (`GET /v1/prices`, `POST /v1/deals`, …). Today they run in-process over seeded data and localStorage; pointing them at a Workers backend does not touch the screens. Set `NEXT_PUBLIC_API_BASE` to switch photo recognition from the on-device colour demo to `POST /v1/recognize`.
+`app/lib/api.ts` exposes Promise functions named after the planned REST endpoints (`GET /v1/prices`, `POST /v1/deals`, …). Today they run in-process over seeded data and localStorage; pointing them at a Workers backend does not touch the screens.
 
 ## Scripts
 
@@ -87,4 +110,4 @@ public/        icons, manifest, service worker
 
 ## Known limits
 
-Demo data only; Kiswahili strings need native review; unit weights (gorogoro, debe, crate) need field calibration; photo recognition is a colour heuristic until the vision endpoint exists; image upload, `#`/`*` key values and soft-key events still have to be confirmed on the itel test handset.
+Demo data only; Kiswahili strings need native review; unit weights (gorogoro, debe, crate) need field calibration; recognition accuracy is measured on web photos, not on photos from the handset; whether CloudMosa's remote browser allows a 37 MB WASM model is unverified (the API route exists for that case); image upload, `#`/`*` key values and soft-key events still have to be confirmed on the itel test handset — the Cloud Phone Simulator cannot upload files at all.

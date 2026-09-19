@@ -29,7 +29,8 @@ const en = {
   str1: "EAC goods under $2,000", str2: "import duty, with a", str3: "Simplified Certificate", str4: "of Origin. Ask the Trade", str5: "Information Desk at the border.", strNote: "Other fees may apply.",
   lang: "Language", network: "Network (demo)", reset: "Reset demo data", resetDone: "Demo data cleared", about: "About",
   lastUpdated: "Offline. Last saved", netError: "No connection. Try again", retry: "Retry",
-  isThis: "Is this…?", none: "None of these", photoFail: "Could not read the photo", demoVision: "Demo: colour-based guess",
+  isThis: "Is this…?", none: "None of these → grid", photoFail: "Could not read the photo", demoVision: "Model unavailable: rough colour guess",
+  visionLoading: "Loading recognizer (37 MB, once)", visionReady: "Recognizer ready. OK to pick a photo", visionWorking: "Looking…", notSure: "Not a crop I know",
   kg: "kg", days: "Days", phone: "Phone", posted: "Posted. Sellers can see it", needPhone: "Enter a phone number",
   amount: "Amount", cardNote: "Traders report",
 } as const;
@@ -61,7 +62,7 @@ const sw: Dict = {
   rate: "Kiwango", street: "Bei ya mtaani", youLoseFx: "Unapoteza", strTitle: "Bila ushuru (STR)",
   lang: "Lugha", network: "Mtandao (demo)", reset: "Futa data ya demo", about: "Kuhusu",
   lastUpdated: "Nje ya mtandao. Mwisho", netError: "Hakuna mtandao. Jaribu tena", retry: "Jaribu",
-  isThis: "Ni hii…?", none: "Hakuna kati ya hizi",
+  isThis: "Ni hii…?", none: "Hakuna kati ya hizi → orodha", visionLoading: "Inapakia (37 MB, mara moja)", visionReady: "Tayari. Sawa kuchagua picha", visionWorking: "Inaangalia…", notSure: "Sijui zao hili",
   days: "Siku", phone: "Simu", amount: "Kiasi",
 };
 

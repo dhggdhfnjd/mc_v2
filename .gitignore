@@ -1,8 +1,6 @@
-<<<<<<< HEAD
-node_modules/
-=======
 # dependencies
 /node_modules
+node_modules/
 
 # next.js
 /.next/
@@ -16,4 +14,12 @@ npm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 /coverage
->>>>>>> 610c96fa8733a57d3407d63c2cc8b70a72384ebf
+
+# copied from node_modules on install (scripts/copy-ort.mjs)
+/public/ort/
+# local evaluation photos
+/public/_eval/
+
+# python
+__pycache__/
+*.pyc
