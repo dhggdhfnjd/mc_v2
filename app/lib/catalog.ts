@@ -21,9 +21,9 @@ export const COMMODITIES: Commodity[] = [
   { id: "cabbage", en: "Cabbage", sw: "Kabichi", icon: "🥬", govKes: 22.5, grades: [1], perish: 0.04, season: FLAT, units: [BAG126, KG], ugFactor: 1, wfpId: 181, sourceName: "Cabbage", priceMarketId: "5666", dataMonths: 57, photo: true },
   { id: "rice", en: "Rice", sw: "Mchele", icon: "🌾", govKes: 180, grades: [1], perish: 0.002, season: FLAT, units: [BAG50, KG], ugFactor: 1, wfpId: 894, sourceName: "Rice (aromatic)", priceMarketId: "4626", dataMonths: 50, photo: true },
   { id: "beans", en: "Beans", sw: "Maharagwe", icon: "🫘", govKes: 93.33, grades: [1], perish: 0.003, season: FLAT, units: [BAG90, KG], ugFactor: 1, wfpId: 897, sourceName: "Beans (rosecoco)", priceMarketId: "4626", dataMonths: 49, photo: true },
-  { id: "cowpea", en: "Cowpeas", sw: "Kunde", icon: "🫛", govKes: 80, grades: [1], perish: 0.003, season: FLAT, units: [BAG90, KG], ugFactor: 1, wfpId: 218, sourceName: "Cowpeas", priceMarketId: "4626", dataMonths: 59, photo: false },
-  { id: "red-potato", en: "Red potato", sw: "Viazi vyekundu", icon: "🥔", govKes: 60, grades: [1], perish: 0.012, season: FLAT, units: [BAG50, KG], ugFactor: 1, wfpId: 890, sourceName: "Potatoes (Irish, red)", priceMarketId: "5666", dataMonths: 53, photo: false },
-  { id: "dolichos", en: "Dolichos beans", sw: "Njahi", icon: "🫘", govKes: 80, grades: [1], perish: 0.003, season: FLAT, units: [BAG90, KG], ugFactor: 1, wfpId: 896, sourceName: "Beans (dolichos)", priceMarketId: "4626", dataMonths: 50, photo: false },
+  { id: "cowpea", en: "Cowpeas", sw: "Kunde", icon: "🫛", govKes: 80, grades: [1], perish: 0.003, season: FLAT, units: [BAG90, KG], ugFactor: 1, wfpId: 218, sourceName: "Cowpeas", priceMarketId: "4626", dataMonths: 59, photo: true },
+  { id: "red-potato", en: "Red potato", sw: "Viazi vyekundu", icon: "🥔", govKes: 60, grades: [1], perish: 0.012, season: FLAT, units: [BAG50, KG], ugFactor: 1, wfpId: 890, sourceName: "Potatoes (Irish, red)", priceMarketId: "5666", dataMonths: 53, photo: true },
+  { id: "dolichos", en: "Dolichos beans", sw: "Njahi", icon: "🫘", govKes: 80, grades: [1], perish: 0.003, season: FLAT, units: [BAG90, KG], ugFactor: 1, wfpId: 896, sourceName: "Beans (dolichos)", priceMarketId: "4626", dataMonths: 50, photo: true },
 ];
 
 // The 22 unique markets that contain at least one observation for the adopted commodities under

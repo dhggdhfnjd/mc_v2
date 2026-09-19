@@ -27,6 +27,9 @@ with open(os.path.join(MODELS, "label-embeddings.json"), encoding="utf-8") as fh
     table = json.load(fh)
 LABEL_IDS = [entry["id"] for entry in table["labels"]]
 LABELS = np.array([entry["vec"] for entry in table["labels"]], dtype=np.float32)
+# text-only vectors for the "is it a crop at all" check; older tables have only vec
+GATES = np.array([entry.get("gate", entry["vec"]) for entry in table["labels"]], dtype=np.float32)
+GATE = float(table.get("gate", 1))
 NEGATIVES = np.array(table["negatives"], dtype=np.float32)
 SIZE = int(table["input"])
 
@@ -44,14 +47,16 @@ def preprocess(image: Image.Image) -> np.ndarray:
 
 
 def rank(embedding: np.ndarray) -> list[dict]:
+    """Same two steps as rank() in app/lib/vision.ts: whether it is a crop, then which one."""
     embedding = embedding / (np.linalg.norm(embedding) or 1.0)
-    crop = table["scale"] * LABELS @ embedding
+    gate = table["scale"] * GATES @ embedding
     other = table["scale"] * NEGATIVES @ embedding
-    top = max(crop.max(), other.max())
-    crop_mass, other_mass = np.exp(crop - top), np.exp(other - top).sum()
-    if other_mass > crop_mass.sum():
+    top = max(gate.max(), other.max())
+    if np.exp(other - top).sum() > GATE * np.exp(gate - top).sum():
         return []  # looks more like "a person / a room / a document" than any crop
-    share = crop_mass / crop_mass.sum()
+    crop = table["scale"] * LABELS @ embedding
+    mass = np.exp(crop - crop.max())
+    share = mass / mass.sum()
     return [{"commodityId": LABEL_IDS[i], "confidence": round(float(share[i]), 4)} for i in np.argsort(-share)[:3]]
 
 

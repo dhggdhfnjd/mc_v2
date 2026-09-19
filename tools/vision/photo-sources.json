@@ -1,0 +1,137 @@
+{
+ "note": "Wikimedia Commons photos averaged into label-embeddings.json by build_label_embeddings.py --photos. Only the averaged embedding ships; the photos are not redistributed.",
+ "photos": {
+  "beans": [
+   "https://commons.wikimedia.org/wiki/File:Pinto_bean.jpg",
+   "https://commons.wikimedia.org/wiki/File:Sieved_and_Dried_Cocoa.jpg",
+   "https://commons.wikimedia.org/wiki/File:Phaseolus_vulgaris菜豆Common_Bean_Seed.jpg",
+   "https://commons.wikimedia.org/wiki/File:Farm_products,_round_nuts,_beans,_dried_beans_veggies,_sunflower.jpg",
+   "https://commons.wikimedia.org/wiki/File:Dried_beans_vegetables.jpg",
+   "https://commons.wikimedia.org/wiki/File:Rosecoco_beans.jpg",
+   "https://commons.wikimedia.org/wiki/File:Rajmah_beans_in_Kullu_district,_Himachal_Pradesh,1.jpg",
+   "https://commons.wikimedia.org/wiki/File:1957_quality_seeds_-_Steckler_Seed_Company,_Inc_(1957)_(16644804696).jpg",
+   "https://commons.wikimedia.org/wiki/File:FavaCornMet.JPG",
+   "https://commons.wikimedia.org/wiki/File:Roman_beans.jpg",
+   "https://commons.wikimedia.org/wiki/File:Cennet_hurma_from_Trabzon.jpg",
+   "https://commons.wikimedia.org/wiki/File:Rajmah_beans_in_Kullu_district,_Himachal_Pradesh,2.jpg",
+   "https://commons.wikimedia.org/wiki/File:Seeds_and_implements_(1902)_(20376294919).jpg",
+   "https://commons.wikimedia.org/wiki/File:Seeds_(1899)_(20551282685).jpg",
+   "https://commons.wikimedia.org/wiki/File:Dry_beans,_lentils_etc.jpg",
+   "https://commons.wikimedia.org/wiki/File:Red_dried_sugar_beans.jpg",
+   "https://commons.wikimedia.org/wiki/File:Roman_bean-1.jpg"
+  ],
+  "cabbage": [
+   "https://commons.wikimedia.org/wiki/File:Henderson's_wholesale_catalogue._-_seeds,_implements,_fertilizers,_insecticides_&c._for_market_gardeners_and_truckers_(1911)_(14761687806).jpg",
+   "https://commons.wikimedia.org/wiki/File:Workers_cleaning_cabbage,_ca_1925_(MOHAI_5543).jpg",
+   "https://commons.wikimedia.org/wiki/File:Red_cabbages_on_display_for_sale_at_Safeway.jpg",
+   "https://commons.wikimedia.org/wiki/File:Henderson's_wholesale_catalogue._-_seeds,_implements,_fertilizers,_insecticides_&c._for_market_gardeners_and_truckers_(1911)_(14598052878).jpg",
+   "https://commons.wikimedia.org/wiki/File:HO2A0077.jpg",
+   "https://commons.wikimedia.org/wiki/File:Adriaen_van_Ostade_-_A_Maid_by_a_Door_with_a_Barrel_and_Vegetables.jpg",
+   "https://commons.wikimedia.org/wiki/File:Cabbages_in_Turkey.jpg",
+   "https://commons.wikimedia.org/wiki/File:Cornish_cabbages,_greengrocers_display,_Redruth,_Cornwall_-_October_2022_(1).jpg",
+   "https://commons.wikimedia.org/wiki/File:Zambia_-Cabbages_for_sale.jpg",
+   "https://commons.wikimedia.org/wiki/File:Cornish_cabbages,_greengrocers_display,_Redruth,_Cornwall_-_October_2022_(2).jpg",
+   "https://commons.wikimedia.org/wiki/File:Cabbages_-_Harbourside_Market,_Wellington,_New_Zealand_-_DSC09800.jpg",
+   "https://commons.wikimedia.org/wiki/File:Mature_cabbage_and_red_and_yellow_onions_for_sale_at_Jack_London_Square.jpg",
+   "https://commons.wikimedia.org/wiki/File:Burpee's_seeds_that_grow_for_1900_-_wholesale_catalogue_for_market_gardeners,_florists,_and_farmers'_clubs_(1900)_(20562779131).jpg",
+   "https://commons.wikimedia.org/wiki/File:Wholesale_price_list_of_requisites_for_florists_and_market_gardeners_(16589192280).jpg"
+  ],
+  "cowpea": [
+   "https://commons.wikimedia.org/wiki/File:Patterned_cowpea_(20240714).jpg",
+   "https://commons.wikimedia.org/wiki/File:BlackEyedPeas.JPG",
+   "https://commons.wikimedia.org/wiki/File:Seeds_of_Cowpea_at_Attappady_in_Kerala.jpg",
+   "https://commons.wikimedia.org/wiki/File:Patterned_cowpea_(20240605).jpg",
+   "https://commons.wikimedia.org/wiki/File:Patterned_cowpea_(20240529).jpg"
+  ],
+  "dolichos": [
+   "https://commons.wikimedia.org/wiki/File:Lablab_purpureus_Steve_Hurst_1.jpg",
+   "https://commons.wikimedia.org/wiki/File:Dolichos_lablab_-_Доліхос_-_Насіння_вигляд_зверху.jpg",
+   "https://commons.wikimedia.org/wiki/File:Dolichos_lablab_-_Доліхос_-_Насіння_вигляд_зі_сторони_рубчика.jpg",
+   "https://commons.wikimedia.org/wiki/File:Seeds_of_Lablab_purpureus_at_Attapady_in_Kerala_.jpg"
+  ],
+  "kale": [
+   "https://commons.wikimedia.org/wiki/File:East_African_Vegetable_(Sukuma_wiki).jpg",
+   "https://commons.wikimedia.org/wiki/File:Johnson's_garden_and_farm_manual_-_1915_(1915)_(14804234423).jpg",
+   "https://commons.wikimedia.org/wiki/File:Burpee's_farm_annual_-_garden,_farm,_and_flower_seeds,_thoroughbred_stock_(1884)_(19887474304).jpg",
+   "https://commons.wikimedia.org/wiki/File:1901_Johnson_and_Stokes_garden_and_farm_manual_(1901)_(19949780934).jpg",
+   "https://commons.wikimedia.org/wiki/File:Fried_Steak,_Ugali_and_Sukuma_Wiki_(Embu).JPG",
+   "https://commons.wikimedia.org/wiki/File:Ugali_&_Sukuma_Wiki.jpg",
+   "https://commons.wikimedia.org/wiki/File:Fried_Tilapia,_Ugali,_Sukuma_Wiki_and_Kachumbari_(From_Kisumu).JPG",
+   "https://commons.wikimedia.org/wiki/File:Farm_and_garden_annual_(16387593782).jpg",
+   "https://commons.wikimedia.org/wiki/File:Mixture_of_Sukuma_wiki_and_spices.jpg",
+   "https://commons.wikimedia.org/wiki/File:Garden_and_farm_seeds_(16370928191).jpg",
+   "https://commons.wikimedia.org/wiki/File:Sukuma_wiki_kwa_wali.jpg",
+   "https://commons.wikimedia.org/wiki/File:Beckert's_garden_annual_-_1949_(1949)_(20172789349).jpg",
+   "https://commons.wikimedia.org/wiki/File:Novelties_and_specialties_(1900)_(19950393434).jpg",
+   "https://commons.wikimedia.org/wiki/File:The_Hawaiian_forester_and_agriculturist_(1906)_(14779166594).jpg"
+  ],
+  "maize": [
+   "https://commons.wikimedia.org/wiki/File:Sundrying_maize_on_cobs_01.jpg",
+   "https://commons.wikimedia.org/wiki/File:Maize_Cobs_-_geograph.org.uk_-_984477.jpg",
+   "https://commons.wikimedia.org/wiki/File:Maize_cobs_&_Farmhouse_Burgenland._Neusiedl._1965_(38281174912).jpg",
+   "https://commons.wikimedia.org/wiki/File:Sundrying_maize_on_cobs_04.jpg",
+   "https://commons.wikimedia.org/wiki/File:Sundrying_maize_on_cobs_03.jpg",
+   "https://commons.wikimedia.org/wiki/File:Sundrying_maize_on_cobs_02.jpg"
+  ],
+  "onion": [
+   "https://commons.wikimedia.org/wiki/File:Pile_of_Onions_at_Barkin_Dogo_Market,_Kaduna_North_02.jpg",
+   "https://commons.wikimedia.org/wiki/File:India_-_Koyambedu_Market_-_Onions_10_(3986292991).jpg",
+   "https://commons.wikimedia.org/wiki/File:India_-_Koyambedu_Market_-_Onions_06_(3987043646).jpg",
+   "https://commons.wikimedia.org/wiki/File:Red_Onions_(2724039538).jpg",
+   "https://commons.wikimedia.org/wiki/File:Pile_of_Onions_at_Barkin_Dogo_Market,_Kaduna_North_03.jpg",
+   "https://commons.wikimedia.org/wiki/File:India_-_Koyambedu_Market_-_Onions_08_(3987045248).jpg"
+  ],
+  "potato": [
+   "https://commons.wikimedia.org/wiki/File:Irish_potatoes_in_a_sack_in_a_market.jpg",
+   "https://commons.wikimedia.org/wiki/File:Potatoes_at_Leicester_Market.jpg",
+   "https://commons.wikimedia.org/wiki/File:Cochabamba,_Wochenmarkt_feria2.jpg",
+   "https://commons.wikimedia.org/wiki/File:Aerial_view_of_irish_potatoes_in_a_sack_in_a_market.jpg",
+   "https://commons.wikimedia.org/wiki/File:Two_irish_potatoes_in_a_sack_in_a_market.jpg",
+   "https://commons.wikimedia.org/wiki/File:Irish_potatoes_in_Jos_Market_04.jpg"
+  ],
+  "red-potato": [
+   "https://commons.wikimedia.org/wiki/File:Désirée_Potatoes.jpg",
+   "https://commons.wikimedia.org/wiki/File:Laura_(odrůda_brambor).jpg",
+   "https://commons.wikimedia.org/wiki/File:Desiree_vorw_festkochend_Niederlande_1962.jpg",
+   "https://commons.wikimedia.org/wiki/File:Lebensmittel-KartoffelsorteLaura1-Asio.jpg",
+   "https://commons.wikimedia.org/wiki/File:České_odrůdy_brambor_s_červenou_slupkou_03.jpg",
+   "https://commons.wikimedia.org/wiki/File:Kartoffel_Laura_03_(fcm).jpg",
+   "https://commons.wikimedia.org/wiki/File:Red_Pontiac_potato_SASA.jpg",
+   "https://commons.wikimedia.org/wiki/File:České_odrůdy_brambor_s_červenou_slupkou_04.jpg",
+   "https://commons.wikimedia.org/wiki/File:Kartoffel_Laura_01_(fcm).jpg",
+   "https://commons.wikimedia.org/wiki/File:Potato_'Désirée'_J1.jpg"
+  ],
+  "rice": [
+   "https://commons.wikimedia.org/wiki/File:White_rice_with_chicken_stew.jpg",
+   "https://commons.wikimedia.org/wiki/File:New_Bedford,_Massachusetts;_its_history,_industries,_institutions_and_attractions_(1889)_(14778818102).jpg",
+   "https://commons.wikimedia.org/wiki/File:New_Bedford,_Massachusetts_-_its_history,_industries,_institutions,_and_attractions_(1889)_(14803399323).jpg",
+   "https://commons.wikimedia.org/wiki/File:Thai_jasmine_rice_uncooked_periodic.jpg",
+   "https://commons.wikimedia.org/wiki/File:White_rice_with_vegetable_soup.jpg",
+   "https://commons.wikimedia.org/wiki/File:WhiteRice.jpg",
+   "https://commons.wikimedia.org/wiki/File:Chicken_and_andouille_sausage_jambalaya.jpg",
+   "https://commons.wikimedia.org/wiki/File:White_Rice_and_Macaroni.jpg",
+   "https://commons.wikimedia.org/wiki/File:Porcupine_meatballs.jpg",
+   "https://commons.wikimedia.org/wiki/File:Thai_jasmine_rice_uncooked.jpg",
+   "https://commons.wikimedia.org/wiki/File:Tiika.jpg",
+   "https://commons.wikimedia.org/wiki/File:Relation_maintaining.jpg",
+   "https://commons.wikimedia.org/wiki/File:Plain_white_rice-min-min.jpg",
+   "https://commons.wikimedia.org/wiki/File:White_rice_on_a_brown_table.jpg"
+  ],
+  "tomato": [
+   "https://commons.wikimedia.org/wiki/File:HK_ALC_鴨脷洲_Ap_Lei_Chau_利東邨_Lei_Tung_Estate_街市_Market_January_2021_SS2_12.jpg",
+   "https://commons.wikimedia.org/wiki/File:Fresh_Tomatoes_for_sale.jpg",
+   "https://commons.wikimedia.org/wiki/File:112_superb_varieties_for_market_gardeners_season_of_1926_(1926)_(16479845849).jpg",
+   "https://commons.wikimedia.org/wiki/File:Münster,_Wochenmarkt_--_2017_--_2332.jpg",
+   "https://commons.wikimedia.org/wiki/File:Tomatoes_for_sale_in_a_UK_supermarket_2013.jpg",
+   "https://commons.wikimedia.org/wiki/File:Tomatoes_on_display_for_sale.jpg",
+   "https://commons.wikimedia.org/wiki/File:Tomatoes_for_sale_in_France.jpg",
+   "https://commons.wikimedia.org/wiki/File:Australian_tomatoes_for_sale_at_store.jpg",
+   "https://commons.wikimedia.org/wiki/File:Tomatoes_for_sale_-_Copenhagen_-_DSC08454.jpg",
+   "https://commons.wikimedia.org/wiki/File:HK_WC_灣仔_Wan_Chai_堡靈頓道_Bowrington_Road_菜肉食街市場_street_market_February_2021_SS2_24.jpg",
+   "https://commons.wikimedia.org/wiki/File:Homegrown_Tomatoes_(115760639).jpeg",
+   "https://commons.wikimedia.org/wiki/File:Tomatoes_for_sale_in_Johannesburg.jpeg",
+   "https://commons.wikimedia.org/wiki/File:A_Great_Day_in_New_York,_New_York_(3605437356).jpg",
+   "https://commons.wikimedia.org/wiki/File:HK_ALC_鴨脷洲_Ap_Lei_Chau_利東邨_Lei_Tung_Estate_街市_Market_January_2021_SS2_02.jpg"
+  ]
+ }
+}

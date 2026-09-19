@@ -75,7 +75,10 @@ export async function downscale(file: Blob, max = 512): Promise<Blob> {
 interface LabelTable {
   scale: number;
   input: number;
-  labels: { id: string; vec: number[] }[];
+  /** a photo is "not a crop" when the negatives outweigh all crops by this factor (default 1) */
+  gate?: number;
+  /** vec picks WHICH crop (text + photo prototype); gate decides WHETHER it is one (text only) */
+  labels: { id: string; vec: number[]; gate?: number[] }[];
   negatives: number[][];
 }
 
@@ -89,16 +92,21 @@ export function rank(embedding: ArrayLike<number>, table: LabelTable): Candidate
     for (let i = 0; i < vec.length; i++) s += vec[i] * embedding[i];
     return (table.scale * s) / norm;
   };
-  const crop = table.labels.map((l) => dot(l.vec));
+  const softmaxSum = (zs: number[], top: number) => zs.reduce((s, z) => s + Math.exp(z - top), 0);
+
+  // 1. is it a crop at all? text-only vectors against "a person / a room / a document…"
+  const gate = table.labels.map((l) => dot(l.gate ?? l.vec));
   const other = table.negatives.map(dot);
-  const top = Math.max(...crop, ...other);
-  const cropMass = crop.map((z) => Math.exp(z - top));
-  const cropSum = cropMass.reduce((s, v) => s + v, 0);
-  const otherSum = other.reduce((s, z) => s + Math.exp(z - top), 0);
-  // more weight on "a person / a room / a document…" than on all crops together → not a crop
-  if (otherSum > cropSum) return [];
+  const top = Math.max(...gate, ...other);
+  if (softmaxSum(other, top) > (table.gate ?? 1) * softmaxSum(gate, top)) return [];
+
+  // 2. which crop? the photo-informed vectors
+  const crop = table.labels.map((l) => dot(l.vec));
+  const best = Math.max(...crop);
+  const mass = crop.map((z) => Math.exp(z - best));
+  const sum = mass.reduce((s, v) => s + v, 0);
   return table.labels
-    .map((l, i) => ({ commodityId: l.id, confidence: cropMass[i] / cropSum }))
+    .map((l, i) => ({ commodityId: l.id, confidence: mass[i] / sum }))
     .sort((a, b) => b.confidence - a.confidence)
     .slice(0, 3);
 }
@@ -242,12 +250,12 @@ export class HttpRecognizer implements VisionProvider {
 type ColourClass = "red" | "yellow" | "green" | "brown" | "pale" | "dark";
 
 const BY_COLOUR: Record<ColourClass, string[]> = {
-  red: ["tomato", "onion"],
+  red: ["tomato", "red-potato", "onion"],
   yellow: ["maize", "potato"],
   green: ["cabbage", "kale"],
-  brown: ["potato", "beans"],
-  pale: ["rice", "onion"],
-  dark: ["beans"],
+  brown: ["potato", "beans", "red-potato"],
+  pale: ["rice", "cowpea", "onion"],
+  dark: ["dolichos", "beans"],
 };
 
 function classify(r: number, g: number, b: number): ColourClass {
