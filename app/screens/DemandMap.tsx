@@ -21,12 +21,12 @@ import { Row } from "../components/ui";
 import type { Key } from "../core/keypad";
 import { useNav } from "../core/router";
 import { demoFix, gpsFix } from "../core/location";
+import { display } from "../core/display";
 import { useSettings } from "../core/settings";
 import { useApi } from "../core/useApi";
 import { getDemands, type DemandView } from "../lib/api";
-import { DEFAULT_MARKET_ID, MARKETS, commodity, market } from "../lib/catalog";
+import { DEFAULT_MARKET_ID, KES_TO_UGX, MARKETS, commodity, market } from "../lib/catalog";
 import { nearestMarket } from "../lib/coords";
-import { fmt } from "../lib/money";
 import { circleBox, distanceKm, fitView, kmPerPx, project, spread, staticMapUrl, type LatLon, type MapView } from "../lib/staticmap";
 
 const W = 240;
@@ -73,6 +73,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
   const { settings, update, t } = useSettings();
   const c = commodity((params.commodityId as string | undefined) ?? settings.foodId);
   const marketId = settings.marketId ?? DEFAULT_MARKET_ID;
+  const money = display(market(marketId).currency, KES_TO_UGX);
   const me = market(marketId);
   const { data } = useApi(`demands.${c.id}.${marketId}`, () => getDemands(c.id, marketId), [c.id, marketId]);
   const [selId, setSelId] = useState<string | null>(null);
@@ -255,7 +256,7 @@ export default function DemandMap({ active, params }: ScreenProps) {
                 key={buyer.id}
                 on={listMode && i === buyerIdx}
                 l={`@${buyer.username}`}
-                r={`${fmt(buyer.kg)} kg`}
+                r={`${money.sym} ${money.perKg(buyer.bidC)}/kg`}
               />
             ))}
           </>
