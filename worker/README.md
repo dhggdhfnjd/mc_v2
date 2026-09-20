@@ -1,8 +1,19 @@
 # Mizani API
 
-A Cloudflare Worker over a **D1** database (serverless SQLite). It exists because the widget is a
-static export on GitHub Pages: there is no server in front of it, an account has to be the same
-account on every handset, and a buyer post has to reach every seller's handset.
+Accounts and buyer posts over a **SQLite** database. It exists because the widget is a static
+export: there is no server behind the page, an account has to be the same account on every
+handset, and a buyer post has to reach every seller's handset.
+
+The API runs in two places from **one** source file, `src/index.ts`:
+
+| where | entry point | database | used for |
+| --- | --- | --- | --- |
+| the hackathon server | `server.ts` (Bun) | a SQLite file (`bun:sqlite`) | **what we deploy** |
+| Cloudflare | `src/index.ts` (Worker) | D1 (serverless SQLite) | the original target; still works |
+
+`src/index.ts` is written against the slice of the D1 API it needs (`prepare → bind →
+first / all / run`). `server.ts` supplies exactly that slice over `bun:sqlite` and adds a plain
+HTTP listener, so neither deployment needs its own copy of the logic, and `schema.sql` is shared.
 
 ## The database
 
@@ -26,7 +37,7 @@ check. Registration inserts and lets SQLite reject a duplicate; that closes the 
 can otherwise win together.
 
 Passwords are hashed by [`app/lib/auth.ts`](../app/lib/auth.ts) — PBKDF2-SHA256, 100 000 rounds,
-16 random bytes of salt per user, stored as `p1$<rounds>$<hex>`. The Worker imports that module
+16 random bytes of salt per user, stored as `p1$<rounds>$<hex>`. The API imports that module
 directly, so the browser and the server can never drift into two different rules.
 
 ## Routes
@@ -52,11 +63,11 @@ English prose to a Kiswahili screen.
 ```bash
 cd worker
 npm install
-npm run db:init      # creates the tables in the local D1 file
-npm run dev          # http://127.0.0.1:8787
+bun run server.ts     # http://127.0.0.1:8787, creates ./mizani.db on first run
 ```
 
-Then point the widget at it:
+`server.ts` applies `schema.sql` itself (every statement is `CREATE … IF NOT EXISTS`), so there is
+no separate migration step. Then point the widget at it:
 
 ```bash
 NEXT_PUBLIC_API_BASE=http://127.0.0.1:8787 npm run dev   # from the repository root
@@ -66,7 +77,30 @@ Without `NEXT_PUBLIC_API_BASE` the app keeps accounts and buyer posts in this ha
 storage instead, so a demo runs with no backend at all (`app/lib/api.ts`). The labelled demo buyers
 are shown in both modes.
 
-## Deploy
+## Deploy on the hackathon server
+
+```bash
+DB_PATH=/srv/mizani-api/data/mizani.db PORT=8787 bun run server.ts
+```
+
+Caddy terminates TLS, serves the static widget, and passes the API through on the same origin, so
+the browser never makes a cross-origin request:
+
+```caddyfile
+handle_path /api/* {
+    reverse_proxy 127.0.0.1:8787
+}
+```
+
+Build the widget with `NEXT_PUBLIC_API_BASE` pointing at that path (the repository variable
+`API_BASE` in CI). `ALLOWED_ORIGINS` defaults to `https://203-116-30-132.sslip.io` and only
+matters if the widget is ever served from another origin.
+
+Two things to remember on a fresh boot: the process is not yet a systemd service, so it has to be
+started by hand, and the `iptables` rules that open 80/443 are not persistent either. The database
+is a single file — copy it somewhere before and after the demo.
+
+## Deploy on Cloudflare instead
 
 ```bash
 npx wrangler d1 create mizani          # paste the printed database_id into wrangler.toml
@@ -74,10 +108,13 @@ npm run db:init:remote
 npx wrangler deploy
 ```
 
-Add the widget's origin to `ALLOWED_ORIGINS` in `wrangler.toml` (the GitHub Pages URL), and set
-`NEXT_PUBLIC_API_BASE` to the deployed Worker URL in the Pages build.
+Then add the widget's origin to `ALLOWED_ORIGINS` in `wrangler.toml` (a Worker is a different
+origin from the widget, so CORS applies here) and set `NEXT_PUBLIC_API_BASE` to the deployed
+Worker URL.
 
 ## Still to do
 
-- Rate-limit `/v1/auth/login` per IP and per username; D1 plus a counter table, or Workers KV.
-- Rate-limit `POST /v1/demands` per account.
+- Run the Bun process under systemd so it survives a reboot, and back the database file up.
+- Rate-limit `/v1/auth/login` per IP and per username, and `POST /v1/demands` per account. Cloud
+  Phone requests all arrive from CloudMosa's data-centre IPs, so the limiter has to key on
+  `X-Forwarded-For`, not the connecting address.
