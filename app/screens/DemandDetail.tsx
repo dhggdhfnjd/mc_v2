@@ -2,8 +2,11 @@
 
 // One buyer selected from the market's map list. The app does not mediate a conversation: it
 // shows the buyer's public number and launches the phone dialler when supported.
+//
+// Up/Down step through the other buyers at the same market without going back to the map; the
+// header counts them (1/2) and the list wraps at both ends.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Screen, { type ScreenProps } from "../components/Screen";
 import { Row } from "../components/ui";
 import { display } from "../core/display";
@@ -26,9 +29,16 @@ export default function DemandDetail({ active, params }: ScreenProps) {
   const d = display(market(fromId).currency, KES_TO_UGX);
   const { data, error } = useApi(`demand-detail.${commodityId}.${fromId}`, () => getDemands(commodityId, fromId), [commodityId, fromId]);
   const buyers = useMemo(() => (data ?? []).filter((x) => x.marketId === selectedMarket), [data, selectedMarket]);
-  const x = buyers.find((buyer) => buyer.id === demandId) ?? buyers[0];
+  const [pickedId, setPickedId] = useState(demandId);
+  const at = buyers.findIndex((buyer) => buyer.id === pickedId);
+  const i = at < 0 ? 0 : at;
+  const x = buyers[i];
 
   const onKey = (key: Key): boolean => {
+    if ((key === "Up" || key === "Down") && buyers.length > 1) {
+      setPickedId(buyers[(i + (key === "Down" ? 1 : buyers.length - 1)) % buyers.length].id);
+      return true;
+    }
     if (key === "OK" && x && canCall) {
       window.location.href = `tel:${x.phone.replace(/\s/g, "")}`;
       return true;
@@ -49,7 +59,7 @@ export default function DemandDetail({ active, params }: ScreenProps) {
     <Screen
       active={active}
       title={market(selectedMarket).name}
-      sub={`@${x.username}`}
+      sub={buyers.length > 1 ? `↑↓ ${i + 1}/${buyers.length}` : `@${x.username}`}
       soft={{ c: canCall ? t("call") : "" }}
       onKey={onKey}
     >
